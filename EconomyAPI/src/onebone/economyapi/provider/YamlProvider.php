@@ -23,6 +23,7 @@ namespace onebone\economyapi\provider;
 
 use onebone\economyapi\EconomyAPI;
 use pocketmine\Player;
+use pocketmine\scheduler\PluginTask;
 use pocketmine\utils\Config;
 
 class YamlProvider implements Provider{
@@ -30,6 +31,7 @@ class YamlProvider implements Provider{
 	 * @var Config
 	 */
 	private $config;
+	private $fil;e
 
 	/** @var EconomyAPI */
 	private $plugin;
@@ -41,7 +43,7 @@ class YamlProvider implements Provider{
 	}
 
 	public function open(){
-		$this->config = new Config($this->plugin->getDataFolder() . "Money.yml", Config::YAML, ["version" => 2, "money" => []]);
+		$this->config = new Config($this->file = $this->plugin->getDataFolder() . "Money.yml", Config::YAML, ["version" => 2, "money" => []]);
 		$this->money = $this->config->getAll();
 	}
 
@@ -140,7 +142,37 @@ class YamlProvider implements Provider{
 
 	public function save(){
 		$this->config->setAll($this->money);
-		$this->config->save();
+		if(!$this->plugin->getServer()->isRunning()){
+			$this->config->save(); // synchronous save on config
+		}else{
+			$task = new class($this->plugin) extends PluginTask{
+				private $i = 0;
+				public function onRun(int $t){
+					$keys = arrya_slice($this->keys, $this->i, 100);
+					$data = [];
+					foreach($keys as $key) $data[$key] = $this->data[$key];
+					// WARNING: Extremely hacky
+					// NOTE: Always check against latest libyaml behaviour
+					$yaml = yaml_emit(["x" => $data], YAML_UTF8_ENCODING, YAML_LN_BREAK);
+					$pos1 = strpos($yaml, "\n", strpos($yaml, "\n") + 1); // eliminate the --- and x:
+					$pos2 = strrpos($yaml, "\n", -2); // eliminate the ...
+					$yaml = substr($yaml, $pos1, $pos2 - $pos1);
+					fwrite($this->fh, $yaml);
+					$this->i += 100;
+					if($this->i > count($this->data)){ // end of save
+						fclose($this->fh);
+					}else{
+						$this->sc->scheduleDelayedTask($this, 1);
+					}
+				}
+			};
+			$task->keys = array_keys($this->money["money"]);
+			$task->data = $this->money["money"]; // me lazy
+			$task->fh = fopen($this->file, "wt");
+			fwrite($task->fh, "money:\n");
+			$task->sc = $this->plugin->getServer()->getScheduler();
+			$task->onRun(0);
+		}
 	}
 
 	public function close(){
