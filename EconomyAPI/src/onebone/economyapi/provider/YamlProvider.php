@@ -31,7 +31,7 @@ class YamlProvider implements Provider{
 	 * @var Config
 	 */
 	private $config;
-	private $fil;e
+	private $file;
 
 	/** @var EconomyAPI */
 	private $plugin;
