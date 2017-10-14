@@ -148,7 +148,7 @@ class YamlProvider implements Provider{
 			$task = new class($this->plugin) extends PluginTask{
 				private $i = 0;
 				public function onRun(int $t){
-					$keys = arrya_slice($this->keys, $this->i, 100);
+					$keys = array_slice($this->keys, $this->i, 100);
 					$data = [];
 					foreach($keys as $key) $data[$key] = $this->data[$key];
 					// WARNING: Extremely hacky
