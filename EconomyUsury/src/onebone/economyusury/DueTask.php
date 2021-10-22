@@ -23,7 +23,7 @@ namespace onebone\economyusury;
 use pocketmine\scheduler\Task;
 use pocketmine\item\Item;
 use pocketmine\utils\TextFormat;
-use pocketmine\Player;
+use pocketmine\player\Player;
 
 class DueTask extends Task{
 	private $guarantee, $playerName, $hostOwner;

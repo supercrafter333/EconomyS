@@ -30,7 +30,7 @@ use pocketmine\event\player\PlayerInteractEvent;
 use pocketmine\utils\Config;
 use pocketmine\command\Command;
 use pocketmine\command\CommandSender;
-use pocketmine\Player;
+use pocketmine\player\Player;
 use pocketmine\Server;
 use pocketmine\level\Position;
 use pocketmine\level\Level;
@@ -398,7 +398,7 @@ class EconomyLand extends PluginBase implements Listener{
 					return true;
 				}
 				$username = $player;
-				$player = $this->getServer()->getPlayer($username);
+				$player = $this->getServer()->getPlayerByPrefix($username);
 				if(!$player instanceof Player){
 					$sender->sendMessage($this->getMessage("player-not-connected", [$username, "%2", "%3"]));
 					return true;
@@ -589,7 +589,7 @@ class EconomyLand extends PluginBase implements Listener{
 	}
 
 	public function onPlaceEvent(BlockPlaceEvent $event){
-		$name = $event->getPlayer()->getName();
+		$name = $event->getPlayerByPrefix()->getName();
 		if(isset($this->placeQueue[$name])){
 			$event->setCancelled();
 			unset($this->placeQueue[$name]);
@@ -602,7 +602,7 @@ class EconomyLand extends PluginBase implements Listener{
 
 	public function permissionCheck(Event $event){
 		/** @var $player Player */
-		$player = $event->getPlayer();
+		$player = $event->getPlayerByPrefix();
 		if($event instanceof PlayerInteractEvent){
 			$block = $event->getBlock()->getSide($event->getFace());
 		}else{

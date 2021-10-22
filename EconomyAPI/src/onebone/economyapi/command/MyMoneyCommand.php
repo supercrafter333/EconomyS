@@ -2,18 +2,16 @@
 
 namespace onebone\economyapi\command;
 
-use pocketmine\event\TranslationContainer;
 use pocketmine\command\Command;
 use pocketmine\command\CommandSender;
 use pocketmine\utils\TextFormat;
-use pocketmine\Player;
+use pocketmine\player\Player;
 
 use onebone\economyapi\EconomyAPI;
 
 class MyMoneyCommand extends Command{
-	private $plugin;
 
-	public function __construct(EconomyAPI $plugin){
+	public function __construct(private EconomyAPI $plugin){
 		$desc = $plugin->getCommandMessage("mymoney");
 		parent::__construct("mymoney", $desc["description"], $desc["usage"]);
 

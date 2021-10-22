@@ -27,7 +27,7 @@ use pocketmine\level\Position;
 use pocketmine\math\Vector3;
 use pocketmine\network\mcpe\protocol\AddItemActorPacket as AddItemEntityPacket;
 use pocketmine\network\mcpe\protocol\RemoveActorPacket as RemoveEntityPacket;
-use pocketmine\Player;
+use pocketmine\player\Player;
 use pocketmine\Server;
 
 class ItemDisplayer{

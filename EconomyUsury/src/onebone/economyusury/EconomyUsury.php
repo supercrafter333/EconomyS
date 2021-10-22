@@ -21,7 +21,7 @@
 namespace onebone\economyusury;
 
 use pocketmine\plugin\PluginBase;
-use pocketmine\Player;
+use pocketmine\player\Player;
 use pocketmine\event\player\PlayerJoinEvent;
 use pocketmine\event\Listener;
 use pocketmine\item\Item;
@@ -125,7 +125,7 @@ class EconomyUsury extends PluginBase implements Listener{
 	}
 	
 	public function onJoinEvent(PlayerJoinEvent $event){
-		$player = $event->getPlayer();
+		$player = $event->getPlayerByPrefix();
 		
 		if(isset($this->msg_queue[$player->getName()])){
 			foreach($this->msg_queue[$player->getName()] as $msg){

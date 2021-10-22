@@ -26,7 +26,7 @@ use pocketmine\command\CommandSender;
 use pocketmine\command\Command;
 use pocketmine\utils\Config;
 use pocketmine\event\player\PlayerQuitEvent;
-use pocketmine\Player;
+use pocketmine\player\Player;
 
 use onebone\economyapi\EconomyAPI;
 
@@ -63,7 +63,7 @@ class EconomyCasino extends PluginBase implements Listener{
 	}
 
 	public function onQuitEvent(PlayerQuitEvent $event){
-		$player = $event->getPlayer();
+		$player = $event->getPlayerByPrefix();
 		
 		foreach($this->casino as $pl => $casino){
 			if(isset($casino["players"][$pl])){

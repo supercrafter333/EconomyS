@@ -25,7 +25,7 @@ use pocketmine\event\Cancellable;
 use pocketmine\item\Item;
 use pocketmine\event\Event;
 use pocketmine\level\Position;
-use pocketmine\Player;
+use pocketmine\player\Player;
 
 class ShopTransactionEvent extends Event implements Cancellable{
 	public static $handlerList;
@@ -42,7 +42,7 @@ class ShopTransactionEvent extends Event implements Cancellable{
 	/**
 	 * @return Player
 	 */
-	public function getPlayer(){
+	public function getPlayerByPrefix(){
 		return $this->player;
 	}
 

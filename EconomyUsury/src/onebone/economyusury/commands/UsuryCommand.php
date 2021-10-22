@@ -27,7 +27,7 @@ use pocketmine\utils\TextFormat;
 use pocketmine\event\Listener;
 use pocketmine\event\player\PlayerJoinEvent;
 use pocketmine\item\Item;
-use pocketmine\Player;
+use pocketmine\player\Player;
 
 use onebone\economyapi\EconomyAPI;
 
@@ -43,8 +43,8 @@ class UsuryCommand extends PluginCommand implements PluginIdentifiableCommand, L
 	}
 	
 	public function onPlayerJoin(PlayerJoinEvent $event){
-		if(isset($this->requests[strtolower($event->getPlayer()->getName())])){
-			$event->getPlayer()->sendMessage($this->getPlugin()->getMessage("received-request", [count($this->requests[strtolower($event->getPlayer()->getName())]), "%2"]));
+		if(isset($this->requests[strtolower($event->getPlayerByPrefix()->getName())])){
+			$event->getPlayerByPrefix()->sendMessage($this->getPlugin()->getMessage("received-request", [count($this->requests[strtolower($event->getPlayerByPrefix()->getName())]), "%2"]));
 		}
 	}
 	

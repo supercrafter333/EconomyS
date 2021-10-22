@@ -24,20 +24,23 @@ namespace onebone\economyapi\task;
 use onebone\economyapi\EconomyAPI;
 use pocketmine\scheduler\Task;
 
-class MySQLPingTask extends Task{
-	private $mysql;
-	
-	private $plugin;
+class MySQLPingTask extends Task
+{
+    private $mysql;
 
-	public function __construct(EconomyAPI $plugin, \mysqli $mysql){
-		$this->plugin = $plugin;
+    private $plugin;
 
-		$this->mysql = $mysql;
-	}
+    public function __construct(EconomyAPI $plugin, \mysqli $mysql)
+    {
+        $this->plugin = $plugin;
 
-	public function onRun(int $currentTick){
-		if(!$this->mysql->ping()){
-			$this->plugin->openProvider();
-		}
-	}
+        $this->mysql = $mysql;
+    }
+
+    public function onRun(): void
+    {
+        if (!$this->mysql->ping()) {
+            $this->plugin->openProvider();
+        }
+    }
 }

@@ -5,15 +5,14 @@ namespace onebone\economyapi\command;
 use pocketmine\command\Command;
 use pocketmine\command\CommandSender;
 use pocketmine\utils\TextFormat;
-use pocketmine\Player;
+use pocketmine\player\Player;
 
 use onebone\economyapi\EconomyAPI;
 use onebone\economyapi\event\money\PayMoneyEvent;
 
 class PayCommand extends Command{
-	private $plugin;
 
-	public function __construct(EconomyAPI $plugin){
+	public function __construct(private EconomyAPI $plugin){
 		$desc = $plugin->getCommandMessage("pay");
 		parent::__construct("pay", $desc["description"], $desc["usage"]);
 
@@ -41,7 +40,7 @@ class PayCommand extends Command{
 			return true;
 		}
 
-		if(($p = $this->plugin->getServer()->getPlayer($player)) instanceof Player){
+		if(($p = $this->plugin->getServer()->getPlayerByPrefix($player)) instanceof Player){
 			$player = $p->getName();
 		}
 
@@ -55,7 +54,8 @@ class PayCommand extends Command{
 			return true;
 		}
 
-		$this->plugin->getServer()->getPluginManager()->callEvent($ev = new PayMoneyEvent($this->plugin, $sender->getName(), $player, $amount));
+        $ev = new PayMoneyEvent($this->plugin, $sender->getName(), $player, $amount);
+        $ev->call();
 
 		$result = EconomyAPI::RET_CANCELLED;
 		if(!$ev->isCancelled()){

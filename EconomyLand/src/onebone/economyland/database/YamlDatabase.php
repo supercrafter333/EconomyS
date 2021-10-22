@@ -24,7 +24,7 @@ use onebone\economyland\event\LandRemoveEvent;
 use pocketmine\level\Level;
 use pocketmine\Server;
 use pocketmine\utils\Config;
-use pocketmine\Player;
+use pocketmine\player\Player;
 
 use onebone\economyland\event\LandAddedEvent;
 

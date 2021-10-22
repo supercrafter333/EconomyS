@@ -20,7 +20,7 @@
 
 namespace onebone\economyproperty;
 
-use pocketmine\Player;
+use pocketmine\player\Player;
 use pocketmine\plugin\PluginBase;
 use pocketmine\event\Listener;
 use pocketmine\event\player\PlayerInteractEvent;
@@ -108,7 +108,7 @@ class EconomyProperty extends PluginBase implements Listener{
 		}
 
 		$block = $event->getBlock();
-		$player = $event->getPlayer();
+		$player = $event->getPlayerByPrefix();
 
 		if(isset($this->touch[$player->getName()])){
 		//	$mergeData[$player->getName()][0] = [(int)$block->getX(), (int)$block->getZ(), $block->getLevel()->getName()];
@@ -177,7 +177,7 @@ class EconomyProperty extends PluginBase implements Listener{
 	}
 
 	public function onBlockPlace(BlockPlaceEvent $event){
-		$username = $event->getPlayer()->getName();
+		$username = $event->getPlayerByPrefix()->getName();
 		if(isset($this->placeQueue[$username])){
 			$event->setCancelled(true);
 			// No message to send cuz it is already sent by InteractEvent
@@ -187,7 +187,7 @@ class EconomyProperty extends PluginBase implements Listener{
 
 	public function onBlockBreak(BlockBreakEvent $event){
 		$block = $event->getBlock();
-		$player = $event->getPlayer();
+		$player = $event->getPlayerByPrefix();
 
 		if(isset($this->touch[$player->getName()])){
 			//$mergeData[$player->getName()][1] = [(int)$block->getX(), (int)$block->getZ()];

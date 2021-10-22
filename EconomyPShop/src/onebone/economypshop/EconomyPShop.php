@@ -22,7 +22,7 @@ namespace onebone\economypshop;
 
 use pocketmine\item\ItemFactory;
 use pocketmine\level\Position;
-use pocketmine\Player;
+use pocketmine\player\Player;
 use pocketmine\Server;
 use pocketmine\event\block\BlockBreakEvent;
 use pocketmine\event\block\BlockPlaceEvent;
@@ -219,7 +219,7 @@ class EconomyPShop extends PluginBase implements Listener{
 		$block = $event->getBlock();
 		$loc = $block->getX() . ":" . $block->getY() . ":" . $block->getZ() . ":" . $block->getLevel()->getFolderName();
 		if(isset($this->shop[$loc])){
-			$player = $event->getPlayer();
+			$player = $event->getPlayerByPrefix();
 			$shop = $this->shop[$loc];
 
 			if($shop["owner"] == $player->getName()){
@@ -259,7 +259,7 @@ class EconomyPShop extends PluginBase implements Listener{
 		}
 		$block = $event->getBlock();
 		$loc = $block->getX() . ":" . $block->getY() . ":" . $block->getZ() . ":" . $block->getLevel()->getFolderName();
-		$player = $event->getPlayer();
+		$player = $event->getPlayerByPrefix();
 		if(isset($this->shop[$loc])){
 			if($player->hasPermission("economypshop.shop.buy")){
 				$shop = $this->shop[$loc];
@@ -367,7 +367,7 @@ class EconomyPShop extends PluginBase implements Listener{
 	}
 
 	public function onBlockPlace(BlockPlaceEvent $event){
-		$user = $event->getPlayer()->getName();
+		$user = $event->getPlayerByPrefix()->getName();
 		if(isset($this->placeQueue[$user])){
 			$event->setCancelled();
 			unset($this->placeQueue[$user]);
@@ -375,7 +375,7 @@ class EconomyPShop extends PluginBase implements Listener{
 	}
 
 	public function onPlayerJoin(PlayerJoinEvent $event){
-		$player = $event->getPlayer();
+		$player = $event->getPlayerByPrefix();
 		$level = $player->getLevel()->getFolderName();
 
 		if(isset($this->items[$level])){

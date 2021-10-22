@@ -23,7 +23,7 @@ namespace onebone\economyauction;
 use pocketmine\plugin\PluginBase;
 use pocketmine\command\CommandSender;
 use pocketmine\command\Command;
-use pocketmine\Player;
+use pocketmine\player\Player;
 use pocketmine\item\Item;
 use pocketmine\utils\TextFormat;
 
@@ -140,7 +140,7 @@ class EconomyAuction extends PluginBase{
 				}elseif(trim($auction) === "" and $sender instanceof Player){
 					$auction = $sender->getName();
 				}else{
-					$player = $this->getServer()->getPlayer($auction);
+					$player = $this->getServer()->getPlayerByPrefix($auction);
 					if($player instanceof Player){
 						$auction = $player->getName();
 					}

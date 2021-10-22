@@ -25,48 +25,44 @@ use onebone\economyapi\event\EconomyAPIEvent;
 
 class MoneyChangedEvent extends EconomyAPIEvent
 {
-	private $username, $money, $oldMoney;
-	public static $handlerList;
+    public static $handlerList;
 
-	public function __construct(EconomyAPI $plugin, $username, $newMoney, $issuer, $oldMoney = null)
-	{
-		parent::__construct($plugin, $issuer);
-		$this->username = $username;
-		$this->money = $newMoney;
-		$this->oldMoney = $oldMoney;
-	}
+    public function __construct(EconomyAPI $plugin, private $username, private $newMoney, $issuer, private $oldMoney = null)
+    {
+        parent::__construct($plugin, $issuer);
+    }
 
-	/**
-	 * @return string
-	 */
-	public function getUsername()
-	{
-		return $this->username;
-	}
+    /**
+     * @return string
+     */
+    public function getUsername()
+    {
+        return $this->username;
+    }
 
-	/**
-	 * @return float
-	 * @deprecated
-	 */
-	public function getMoney()
-	{
-		return $this->money;
-	}
+    /**
+     * @return float
+     * @deprecated
+     */
+    public function getMoney()
+    {
+        return $this->newMoney;
+    }
 
-	/**
-	 * @return float
-	 */
-	public function getNewMoney()
-	{
-		return $this->money;
-	}
+    /**
+     * @return float
+     */
+    public function getNewMoney()
+    {
+        return $this->newMoney;
+    }
 
 
-	/**
-	 * @return float|null
-	 */
-	public function getOldMoney()
-	{
-		return $this->oldMoney;
-	}
+    /**
+     * @return float|null
+     */
+    public function getOldMoney()
+    {
+        return $this->oldMoney;
+    }
 }

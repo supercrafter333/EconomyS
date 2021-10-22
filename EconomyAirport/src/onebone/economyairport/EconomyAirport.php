@@ -67,7 +67,7 @@ class EconomyAirport extends PluginBase  implements Listener{
 
 	public function onSignChange(SignChangeEvent $event){
 		if(($data = $this->checkTag($event->getLine(0), $event->getLine(1))) !== false){
-			$player = $event->getPlayer();
+			$player = $event->getPlayerByPrefix();
 			if(!$player->hasPermission("economyairport.create")){
 				$player->sendMessage($this->getMessage("no-permission-create"));
 				return;
@@ -150,7 +150,7 @@ class EconomyAirport extends PluginBase  implements Listener{
 			if($airport["type"] === 1)
 				return;
 				
-			$player = $event->getPlayer();
+			$player = $event->getPlayerByPrefix();
 			if(isset($this->airport[$airport["targetX"].":".$airport["targetY"].":".$airport["targetZ"].":".$airport["targetLevel"]]) and $this->airport[$airport["targetX"].":".$airport["targetY"].":".$airport["targetZ"].":".$airport["targetLevel"]]["type"] === 1){
 				$money = EconomyAPI::getInstance()->myMoney($player);
 				if(!$block->getLevel()->getTile(new Vector3($airport["targetX"], $airport["targetY"], $airport["targetZ"], $airport["targetLevel"])) instanceof Sign){
@@ -186,7 +186,7 @@ class EconomyAirport extends PluginBase  implements Listener{
 	public function onBlockBreak(BlockBreakEvent $event){
 		$block = $event->getBlock();
 		if(isset($this->airport[$block->getX().":".$block->getY().":".$block->getZ().":".$block->getLevel()->getFolderName()])){
-			$player = $event->getPlayer();
+			$player = $event->getPlayerByPrefix();
 			if(!$player->hasPermission("economyairport.remove")){
 				$player->sendMessage($this->getMessage("no-permission-break"));
 				return;

@@ -33,7 +33,7 @@ use pocketmine\item\Item;
 use pocketmine\item\ItemFactory;
 use pocketmine\level\Position;
 use pocketmine\math\Vector3;
-use pocketmine\Player;
+use pocketmine\player\Player;
 use pocketmine\plugin\PluginBase;
 use pocketmine\utils\TextFormat;
 
@@ -201,7 +201,7 @@ class EconomySell extends PluginBase implements Listener{
     }
 
     public function onPlayerJoin(PlayerJoinEvent $event){
-        $player = $event->getPlayer();
+        $player = $event->getPlayerByPrefix();
         $level = $player->getLevel()->getFolderName();
 		$this->canSell[strtolower($player->getName())] = true;
         if(isset($this->items[$level])){
@@ -234,7 +234,7 @@ class EconomySell extends PluginBase implements Listener{
             return;
         }
 
-        $player = $event->getPlayer();
+        $player = $event->getPlayerByPrefix();
         $block = $event->getBlock();
 
         $iusername = strtolower($player->getName());
@@ -330,12 +330,12 @@ class EconomySell extends PluginBase implements Listener{
     }
 
 	public function onPlayerMove(PlayerMoveEvent $event) {
-		$iusername = strtolower($event->getPlayer()->getName());
+		$iusername = strtolower($event->getPlayerByPrefix()->getName());
 		$this->canSell[$iusername] = true;
 	}
 
     public function onBlockPlace(BlockPlaceEvent $event){
-        $iusername = strtolower($event->getPlayer()->getName());
+        $iusername = strtolower($event->getPlayerByPrefix()->getName());
         if(isset($this->placeQueue[$iusername])){
             $event->setCancelled();
             unset($this->placeQueue[$iusername]);
@@ -345,7 +345,7 @@ class EconomySell extends PluginBase implements Listener{
     public function onBlockBreak(BlockBreakEvent $event){
         $block = $event->getBlock();
         if($this->provider->getSell($block) !== false){
-            $player = $event->getPlayer();
+            $player = $event->getPlayerByPrefix();
 
             $event->setCancelled(true);
             $player->sendMessage($this->getMessage("sell-breaking-forbidden"));

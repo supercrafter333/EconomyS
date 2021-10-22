@@ -5,14 +5,13 @@ namespace onebone\economyapi\command;
 use pocketmine\command\Command;
 use pocketmine\command\CommandSender;
 use pocketmine\utils\TextFormat;
-use pocketmine\Player;
+use pocketmine\player\Player;
 
 use onebone\economyapi\EconomyAPI;
 
 class MyStatusCommand extends Command{
-	private $plugin;
 
-	public function __construct(EconomyAPI $plugin){
+	public function __construct(private EconomyAPI $plugin){
 		$desc = $plugin->getCommandMessage("mystatus");
 		parent::__construct("mystatus", $desc["description"], $desc["usage"]);
 

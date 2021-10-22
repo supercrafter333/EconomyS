@@ -20,12 +20,14 @@
 
 namespace onebone\economyapi;
 
-use pocketmine\Player;
+use pocketmine\permission\DefaultPermissions;
+use pocketmine\permission\Permission;
+use pocketmine\player\Player;
 use pocketmine\plugin\PluginBase;
 use pocketmine\event\Listener;
 use pocketmine\event\player\PlayerJoinEvent;
 use pocketmine\utils\Config;
-use pocketmine\utils\Utils;
+use pocketmine\utils\Internet;
 use pocketmine\utils\TextFormat;
 
 use onebone\economyapi\provider\Provider;
@@ -38,401 +40,449 @@ use onebone\economyapi\event\money\MoneyChangedEvent;
 use onebone\economyapi\event\account\CreateAccountEvent;
 use onebone\economyapi\task\SaveTask;
 
-class EconomyAPI extends PluginBase implements Listener{
-	const API_VERSION = 3;
-	const PACKAGE_VERSION = "5.7";
+class EconomyAPI extends PluginBase implements Listener
+{
+    const API_VERSION = 3;
+    const PACKAGE_VERSION = "5.7";
 
-	const RET_NO_ACCOUNT = -3;
-	const RET_CANCELLED = -2;
-	const RET_NOT_FOUND = -1;
-	const RET_INVALID = 0;
-	const RET_SUCCESS = 1;
+    const RET_NO_ACCOUNT = -3;
+    const RET_CANCELLED = -2;
+    const RET_NOT_FOUND = -1;
+    const RET_INVALID = 0;
+    const RET_SUCCESS = 1;
 
-	private static $instance = null;
+    private static $instance = null;
 
-	/** @var Provider */
-	private $provider;
+    /** @var Provider */
+    private $provider;
 
-	private $langList = [
-		"def" => "Default",
-		"user-define" => "User Defined",
-		"ch" => "简体中文",
-		"cs" => "Čeština",
-		"en" => "English",
-		"fr" => "Français",
-		"id" => "Bahasa Indonesia",
-		"it" => "Italiano",
-		"ja" => "日本語",
-		"ko" => "한국어",
-		"nl" => "Nederlands",
-		"por" => "Portugues",
-		"ru" => "Русский",
-		"uk" => "Українська",
-		"zh" => "繁體中文",
-	];
-	private $lang = [], $playerLang = [];
+    private $langList = [
+        "def" => "Default",
+        "user-define" => "User Defined",
+        "ch" => "简体中文",
+        "cs" => "Čeština",
+        "en" => "English",
+        "fr" => "Français",
+        "id" => "Bahasa Indonesia",
+        "it" => "Italiano",
+        "ja" => "日本語",
+        "ko" => "한국어",
+        "nl" => "Nederlands",
+        "por" => "Portugues",
+        "ru" => "Русский",
+        "uk" => "Українська",
+        "zh" => "繁體中文",
+    ];
+    private $lang = [], $playerLang = [];
 
-	/**
-	 * @param string			$command
-	 * @param string|bool		$lang
-	 *
-	 * @return array
-	 */
-	public function getCommandMessage(string $command, $lang = false) : array{
-		if($lang === false){
-			$lang = $this->getConfig()->get("default-lang");
-		}
-		$command = strtolower($command);
-		if(isset($this->lang[$lang]["commands"][$command])){
-			return $this->lang[$lang]["commands"][$command];
-		}else{
-			return $this->lang["def"]["commands"][$command];
-		}
-	}
+    /**
+     * @param string $command
+     * @param string|bool $lang
+     *
+     * @return array
+     */
+    public function getCommandMessage(string $command, $lang = false): array
+    {
+        if ($lang === false) {
+            $lang = $this->getConfig()->get("default-lang");
+        }
+        $command = strtolower($command);
+        if (isset($this->lang[$lang]["commands"][$command])) {
+            return $this->lang[$lang]["commands"][$command];
+        } else {
+            return $this->lang["def"]["commands"][$command];
+        }
+    }
 
-	/**
-	 * @param string		$key
-	 * @param array 		$params
-	 * @param string		$player
-	 *
-	 * @return string
-	 */
-	public function getMessage(string $key, array $params = [], string $player = "console") : string{
-		$player = strtolower($player);
-		if(isset($this->lang[$this->playerLang[$player]][$key])){
-			return $this->replaceParameters($this->lang[$this->playerLang[$player]][$key], $params);
-		}elseif(isset($this->lang["def"][$key])){
-			return $this->replaceParameters($this->lang["def"][$key], $params);
-		}
-		return "Language matching key \"$key\" does not exist.";
-	}
+    /**
+     * @param string $key
+     * @param array $params
+     * @param string $player
+     *
+     * @return string
+     */
+    public function getMessage(string $key, array $params = [], string $player = "console"): string
+    {
+        $player = strtolower($player);
+        if (isset($this->lang[$this->playerLang[$player]][$key])) {
+            return $this->replaceParameters($this->lang[$this->playerLang[$player]][$key], $params);
+        } elseif (isset($this->lang["def"][$key])) {
+            return $this->replaceParameters($this->lang["def"][$key], $params);
+        }
+        return "Language matching key \"$key\" does not exist.";
+    }
 
-	public function setPlayerLanguage(string $player, string $language) : bool{
-		$player = strtolower($player);
-		$language = strtolower($language);
-		if(isset($this->lang[$language])){
-			$this->playerLang[$player] = $language;
-			return true;
-		}
-		return false;
-	}
+    public function setPlayerLanguage(string $player, string $language): bool
+    {
+        $player = strtolower($player);
+        $language = strtolower($language);
+        if (isset($this->lang[$language])) {
+            $this->playerLang[$player] = $language;
+            return true;
+        }
+        return false;
+    }
 
-	public function getMonetaryUnit() : string{
-		return $this->getConfig()->get("monetary-unit");
-	}
+    public function getMonetaryUnit(): string
+    {
+        return $this->getConfig()->get("monetary-unit");
+    }
 
-	/**
-	 * @return array
-	 */
-	public function getAllMoney() : array{
-		return $this->provider->getAll();
-	}
+    /**
+     * @return array
+     */
+    public function getAllMoney(): array
+    {
+        return $this->provider->getAll();
+    }
 
-	/**
-	 * @param string|Player		$player
-	 * @param float				$defaultMoney
-	 * @param bool				$force
-	 *
-	 * @return bool
-	 */
-	public function createAccount($player, $defaultMoney = false, bool $force = false) : bool{
-		if($player instanceof Player){
-			$player = $player->getName();
-		}
-		$player = strtolower($player);
+    /**
+     * @param string|Player $player
+     * @param float $defaultMoney
+     * @param bool $force
+     *
+     * @return bool
+     */
+    public function createAccount($player, $defaultMoney = false, bool $force = false): bool
+    {
+        if ($player instanceof Player) {
+            $player = $player->getName();
+        }
+        $player = strtolower($player);
 
-		if(!$this->provider->accountExists($player)){
-			$defaultMoney = ($defaultMoney === false) ? $this->getConfig()->get("default-money") : $defaultMoney;
+        if (!$this->provider->accountExists($player)) {
+            $defaultMoney = ($defaultMoney === false) ? $this->getConfig()->get("default-money") : $defaultMoney;
 
-			$this->getServer()->getPluginManager()->callEvent($ev = new CreateAccountEvent($this, $player, $defaultMoney, "none"));
-			if(!$ev->isCancelled() or $force === true){
-				$this->provider->createAccount($player, $ev->getDefaultMoney());
-			}
-		}
-		return false;
-	}
+            $ev = new CreateAccountEvent($this, $player, $defaultMoney, "none");
+            $ev->call();
+            if (!$ev->isCancelled() or $force === true) {
+                $this->provider->createAccount($player, $ev->getDefaultMoney());
+            }
+        }
+        return false;
+    }
 
-	/**
-	 * @param string|Player			$player
-	 *
-	 * @return bool
-	 */
-	public function accountExists($player) : bool{
-		return $this->provider->accountExists($player);
-	}
+    /**
+     * @param string|Player $player
+     *
+     * @return bool
+     */
+    public function accountExists($player): bool
+    {
+        return $this->provider->accountExists($player);
+    }
 
-	/**
-	 * @param Player|string		$player
-	 *
-	 * @return float|bool
-	 */
-	public function myMoney($player){
-		return $this->provider->getMoney($player);
-	}
+    /**
+     * @param Player|string $player
+     *
+     * @return float|bool
+     */
+    public function myMoney($player)
+    {
+        return $this->provider->getMoney($player);
+    }
 
-	/**
-	 * @param string|Player 	$player
-	 * @param float 			$amount
-	 * @param bool				$force
-	 * @param string			$issuer
-	 *
-	 * @return int
-	 */
-	public function setMoney($player, $amount, bool $force = false, string $issuer = "none") : int{
-		if($amount < 0){
-			return self::RET_INVALID;
-		}
+    /**
+     * @param string|Player $player
+     * @param float $amount
+     * @param bool $force
+     * @param string $issuer
+     *
+     * @return int
+     */
+    public function setMoney($player, $amount, bool $force = false, string $issuer = "none"): int
+    {
+        if ($amount < 0) {
+            return self::RET_INVALID;
+        }
 
-		if($player instanceof Player){
-			$player = $player->getName();
-		}
-		$player = strtolower($player);
-		if($this->provider->accountExists($player)){
-			$amount = round($amount, 2);
-			if($amount > $this->getConfig()->get("max-money")){
-				return self::RET_INVALID;
-			}
+        if ($player instanceof Player) {
+            $player = $player->getName();
+        }
+        $player = strtolower($player);
+        if ($this->provider->accountExists($player)) {
+            $amount = round($amount, 2);
+            if ($amount > $this->getConfig()->get("max-money")) {
+                return self::RET_INVALID;
+            }
 
-			$oldMoney = $this->provider->getMoney($player);
-			if(!is_numeric($oldMoney)) $oldMoney = null;
+            $oldMoney = $this->provider->getMoney($player);
+            if (!is_numeric($oldMoney)) $oldMoney = null;
 
-			$this->getServer()->getPluginManager()->callEvent($ev = new SetMoneyEvent($this, $player, $amount, $issuer));
-			if(!$ev->isCancelled() or $force === true){
-				$this->provider->setMoney($player, $amount);
-				$this->getServer()->getPluginManager()->callEvent(new MoneyChangedEvent($this, $player, $amount, $issuer, $oldMoney));
-				return self::RET_SUCCESS;
-			}
-			return self::RET_CANCELLED;
-		}
-		return self::RET_NO_ACCOUNT;
-	}
+            $ev = new SetMoneyEvent($this, $player, $amount, $issuer);
+            $ev->call();
+            if (!$ev->isCancelled() or $force === true) {
+                $this->provider->setMoney($player, $amount);
+                $ev2 = new MoneyChangedEvent($this, $player, $amount, $issuer, $oldMoney);
+                $ev2->call();
+                return self::RET_SUCCESS;
+            }
+            return self::RET_CANCELLED;
+        }
+        return self::RET_NO_ACCOUNT;
+    }
 
-	/**
-	 * @param string|Player 	$player
-	 * @param float 			$amount
-	 * @param bool				$force
-	 * @param string			$issuer
-	 *
-	 * @return int
-	 */
-	public function addMoney($player, $amount, bool $force = false, $issuer = "none") : int{
-		if($amount < 0){
-			return self::RET_INVALID;
-		}
-		if($player instanceof Player){
-			$player = $player->getName();
-		}
-		$player = strtolower($player);
-		if(($money = $this->provider->getMoney($player)) !== false){
-			$amount = round($amount, 2);
-			if($money + $amount > $this->getConfig()->get("max-money")){
-				return self::RET_INVALID;
-			}
+    /**
+     * @param string|Player $player
+     * @param float $amount
+     * @param bool $force
+     * @param string $issuer
+     *
+     * @return int
+     */
+    public function addMoney($player, $amount, bool $force = false, $issuer = "none"): int
+    {
+        if ($amount < 0) {
+            return self::RET_INVALID;
+        }
+        if ($player instanceof Player) {
+            $player = $player->getName();
+        }
+        $player = strtolower($player);
+        if (($money = $this->provider->getMoney($player)) !== false) {
+            $amount = round($amount, 2);
+            if ($money + $amount > $this->getConfig()->get("max-money")) {
+                return self::RET_INVALID;
+            }
 
-			$this->getServer()->getPluginManager()->callEvent($ev = new AddMoneyEvent($this, $player, $amount, $issuer));
-			if(!$ev->isCancelled() or $force === true){
-				$this->provider->addMoney($player, $amount);
-				$this->getServer()->getPluginManager()->callEvent(new MoneyChangedEvent($this, $player, $amount + $money, $issuer, $money));
-				return self::RET_SUCCESS;
-			}
-			return self::RET_CANCELLED;
-		}
-		return self::RET_NO_ACCOUNT;
-	}
+            $ev = new AddMoneyEvent($this, $player, $amount, $issuer);
+            $ev->call();
+            if (!$ev->isCancelled() or $force === true) {
+                $this->provider->addMoney($player, $amount);
+                $ev2 = new MoneyChangedEvent($this, $player, $amount + $money, $issuer, $money);
+                $ev2->call();
+                return self::RET_SUCCESS;
+            }
+            return self::RET_CANCELLED;
+        }
+        return self::RET_NO_ACCOUNT;
+    }
 
-	/**
-	 * @param string|Player 	$player
-	 * @param float 			$amount
-	 * @param bool				$force
-	 * @param string			$issuer
-	 *
-	 * @return int
-	 */
-	public function reduceMoney($player, $amount, bool $force = false, $issuer = "none") : int{
-		if($amount < 0){
-			return self::RET_INVALID;
-		}
-		if($player instanceof Player){
-			$player = $player->getName();
-		}
-		$player = strtolower($player);
-		if(($money = $this->provider->getMoney($player)) !== false){
-			$amount = round($amount, 2);
-			if($money - $amount < 0){
-				return self::RET_INVALID;
-			}
+    /**
+     * @param string|Player $player
+     * @param float $amount
+     * @param bool $force
+     * @param string $issuer
+     *
+     * @return int
+     */
+    public function reduceMoney($player, $amount, bool $force = false, $issuer = "none"): int
+    {
+        if ($amount < 0) {
+            return self::RET_INVALID;
+        }
+        if ($player instanceof Player) {
+            $player = $player->getName();
+        }
+        $player = strtolower($player);
+        if (($money = $this->provider->getMoney($player)) !== false) {
+            $amount = round($amount, 2);
+            if ($money - $amount < 0) {
+                return self::RET_INVALID;
+            }
 
-			$this->getServer()->getPluginManager()->callEvent($ev = new ReduceMoneyEvent($this, $player, $amount, $issuer));
-			if(!$ev->isCancelled() or $force === true){
-				$this->provider->reduceMoney($player, $amount);
-				$this->getServer()->getPluginManager()->callEvent(new MoneyChangedEvent($this, $player, $money - $amount, $issuer, $money));
-				return self::RET_SUCCESS;
-			}
-			return self::RET_CANCELLED;
-		}
-		return self::RET_NO_ACCOUNT;
-	}
+            $ev = new ReduceMoneyEvent($this, $player, $amount, $issuer);
+            $ev->call();
+            if (!$ev->isCancelled() or $force === true) {
+                $this->provider->reduceMoney($player, $amount);
+                $ev2 = new MoneyChangedEvent($this, $player, $money - $amount, $issuer, $money);
+                $ev2->call();
+                return self::RET_SUCCESS;
+            }
+            return self::RET_CANCELLED;
+        }
+        return self::RET_NO_ACCOUNT;
+    }
 
-	/**
-	 * @return EconomyAPI
-	 */
-	public static function getInstance(){
-		return self::$instance;
-	}
+    /**
+     * @return EconomyAPI
+     */
+    public static function getInstance(): self
+    {
+        return self::$instance;
+    }
 
-	public function onLoad(){
-		self::$instance = $this;
-	}
+    public function onLoad(): void
+    {
+        self::$instance = $this;
+    }
 
-	public function onEnable(){
-		/*
-		 * 디폴트 설정 파일을 먼저 생성하게 되면 데이터 폴더 파일이 자동 생성되므로
-		 * 'Failed to open stream: No such file or directory' 경고 메시지를 없앨 수 있습니다
-		 * - @64FF00
-		 *
-		 * [추가 옵션]
-		 * if(!file_exists($this->dataFolder))
-		 *     mkdir($this->dataFolder, 0755, true);
-		 */
-		$this->saveDefaultConfig();
+    public function onEnable(): void
+    {
+        /*
+         * 디폴트 설정 파일을 먼저 생성하게 되면 데이터 폴더 파일이 자동 생성되므로
+         * 'Failed to open stream: No such file or directory' 경고 메시지를 없앨 수 있습니다
+         * - @64FF00
+         *
+         * [추가 옵션]
+         * if(!file_exists($this->dataFolder))
+         *     mkdir($this->dataFolder, 0755, true);
+         */
+        $this->saveDefaultConfig();
 
-		if(!is_file($this->getDataFolder()."PlayerLang.dat")){
-			file_put_contents($this->getDataFolder()."PlayerLang.dat", serialize([]));
-		}
-		$this->playerLang = unserialize(file_get_contents($this->getDataFolder()."PlayerLang.dat"));
+        if (!is_file($this->getDataFolder() . "PlayerLang.dat")) {
+            file_put_contents($this->getDataFolder() . "PlayerLang.dat", serialize([]));
+        }
+        $this->playerLang = unserialize(file_get_contents($this->getDataFolder() . "PlayerLang.dat"));
 
-		if(!isset($this->playerLang["console"])){
-			$this->playerLang["console"] = $this->getConfig()->get("default-lang");
-		}
-		if(!isset($this->playerLang["rcon"])){
-			$this->playerLang["rcon"] = $this->getConfig()->get("default-lang");
-		}
-		$this->initialize();
+        if (!isset($this->playerLang["console"])) {
+            $this->playerLang["console"] = $this->getConfig()->get("default-lang");
+        }
+        if (!isset($this->playerLang["rcon"])) {
+            $this->playerLang["rcon"] = $this->getConfig()->get("default-lang");
+        }
+        $this->initialize();
 
-		if($this->getConfig()->get("auto-save-interval") > 0){
-			$this->getScheduler()->scheduleDelayedRepeatingTask(new SaveTask($this), $this->getConfig()->get("auto-save-interval") * 1200, $this->getConfig()->get("auto-save-interval") * 1200);
-		}
+        if ($this->getConfig()->get("auto-save-interval") > 0) {
+            $this->getScheduler()->scheduleDelayedRepeatingTask(new SaveTask($this), $this->getConfig()->get("auto-save-interval") * 1200, $this->getConfig()->get("auto-save-interval") * 1200);
+        }
 
-		$this->getServer()->getPluginManager()->registerEvents($this, $this);
-	}
+        $this->getServer()->getPluginManager()->registerEvents($this, $this);
+    }
 
-	public function onJoin(PlayerJoinEvent $event){
-		$player = $event->getPlayer();
+    private function registerPermissions(): void
+    {
+        DefaultPermissions::registerPermission(new Permission("economyapi.*", "Allows to control all of functions in EconomyAPI", [
+            "economyapi.command.setmoney",
+            "economyapi.command.mymoney",
+            "economyapi.command.givemoney",
+            "economyapi.command.pay",
+            "economyapi.command.seemoney",
+            "economyapi.command.setlang",
+            "economyapi.command.topmoney",
+            "economyapi.command.mystatus",
+            "economyapi.command.takemoney",
+        ]));
+        DefaultPermissions::registerPermission(new Permission("economyapi.*", "Allows to control all of functions in EconomyAPI", ["economyapi.command.*"]));
+    }
 
-		if(!isset($this->playerLang[strtolower($player->getName())])){
-			$this->playerLang[strtolower($player->getName())] = $this->getConfig()->get("default-lang");
-		}
-		if(!$this->provider->accountExists($player)){
-			$this->getLogger()->debug("Account of '".$player->getName()."' is not found. Creating account...");
-			$this->createAccount($player, false, true);
-		}
-	}
+    public function onJoin(PlayerJoinEvent $event)
+    {
+        $player = $event->getPlayer();
 
-	public function onDisable(){
-		$this->saveAll();
+        if (!isset($this->playerLang[strtolower($player->getName())])) {
+            $this->playerLang[strtolower($player->getName())] = $this->getConfig()->get("default-lang");
+        }
+        if (!$this->provider->accountExists($player)) {
+            $this->getLogger()->debug("Account of '" . $player->getName() . "' is not found. Creating account...");
+            $this->createAccount($player, false, true);
+        }
+    }
 
-		if($this->provider instanceof Provider){
-			$this->provider->close();
-		}
-	}
+    public function onDisable(): void
+    {
+        $this->saveAll();
 
-	public function saveAll(){
-		if($this->provider instanceof Provider){
-			$this->provider->save();
-		}
-		file_put_contents($this->getDataFolder()."PlayerLang.dat", serialize($this->playerLang));
-	}
+        if ($this->provider instanceof Provider) {
+            $this->provider->close();
+        }
+    }
 
-	private function replaceParameters($message, $params = []){
-		$search = ["%MONETARY_UNIT%"];
-		$replace = [$this->getMonetaryUnit()];
+    public function saveAll()
+    {
+        if ($this->provider instanceof Provider) {
+            $this->provider->save();
+        }
+        file_put_contents($this->getDataFolder() . "PlayerLang.dat", serialize($this->playerLang));
+    }
 
-		for($i = 0; $i < count($params); $i++){
-			$search[] = "%".($i + 1);
-			$replace[] = $params[$i];
-		}
+    private function replaceParameters($message, $params = [])
+    {
+        $search = ["%MONETARY_UNIT%"];
+        $replace = [$this->getMonetaryUnit()];
 
-		$colors = [
-			"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f", "k", "l", "m", "n", "o", "r"
-		];
-		foreach($colors as $code){
-			$search[] = "&".$code;
-			$replace[] = TextFormat::ESCAPE.$code;
-		}
+        for ($i = 0; $i < count($params); $i++) {
+            $search[] = "%" . ($i + 1);
+            $replace[] = $params[$i];
+        }
 
-		return str_replace($search, $replace, $message);
-	}
+        $colors = [
+            "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f", "k", "l", "m", "n", "o", "r"
+        ];
+        foreach ($colors as $code) {
+            $search[] = "&" . $code;
+            $replace[] = TextFormat::ESCAPE . $code;
+        }
 
-	private function initialize(){
-		if($this->getConfig()->get("check-update")){
-			$this->checkUpdate();
-		}
-		switch(strtolower($this->getConfig()->get("provider"))){
-			case "yaml":
-			$this->provider = new YamlProvider($this);
-			break;
-			case "mysql":
-			$this->provider = new MySQLProvider($this);
-			break;
-			default:
-			$this->getLogger()->critical("Invalid database was given.");
-			return false;
-		}
-		$this->provider->open();
+        return str_replace($search, $replace, $message);
+    }
 
-		$this->initializeLanguage();
-		$this->getLogger()->notice("Database provider was set to: ".$this->provider->getName());
-		$this->registerCommands();
-	}
+    private function initialize()
+    {
+        if ($this->getConfig()->get("check-update")) {
+            $this->checkUpdate();
+        }
+        switch (strtolower($this->getConfig()->get("provider"))) {
+            case "yaml":
+                $this->provider = new YamlProvider($this);
+                break;
+            case "mysql":
+                $this->provider = new MySQLProvider($this);
+                break;
+            default:
+                $this->getLogger()->critical("Invalid database was given.");
+                return false;
+        }
+        $this->provider->open();
 
-	public function openProvider(){
-		if($this->provider !== null)
-			$this->provider->open();
-	}
+        $this->initializeLanguage();
+        $this->getLogger()->notice("Database provider was set to: " . $this->provider->getName());
+        $this->registerPermissions();
+        $this->registerCommands();
+    }
 
-	private function checkUpdate(){
-		try{
-			$info = json_decode(Utils::getURL($this->getConfig()->get("update-host")."?version=".$this->getDescription()->getVersion()."&package_version=".self::PACKAGE_VERSION), true);
-			if(!isset($info["status"]) or $info["status"] !== true){
-				$this->getLogger()->notice("Something went wrong on update server.");
-				return false;
-			}
-			if($info["update-available"] === true){
-				$this->getLogger()->notice("Server says new version (".$info["new-version"].") of EconomyS is out. Check it out at ".$info["download-address"]);
-			}
-			$this->getLogger()->notice($info["notice"]);
-			return true;
-		}catch(\Throwable $e){
-			$this->getLogger()->logException($e);
-			return false;
-		}
-	}
+    public function openProvider()
+    {
+        if ($this->provider !== null)
+            $this->provider->open();
+    }
 
-	private function registerCommands(){
-		$map = $this->getServer()->getCommandMap();
+    private function checkUpdate()
+    {
+        try {
+            $info = json_decode(Internet::simpleCurl($this->getConfig()->get("update-host") . "?version=" . $this->getDescription()->getVersion() . "&package_version=" . self::PACKAGE_VERSION)->getBody(), true);
+            if (!isset($info["status"]) or $info["status"] !== true) {
+                $this->getLogger()->notice("Something went wrong on update server.");
+                return false;
+            }
+            if ($info["update-available"] === true) {
+                $this->getLogger()->notice("Server says new version (" . $info["new-version"] . ") of EconomyS is out. Check it out at " . $info["download-address"]);
+            }
+            $this->getLogger()->notice($info["notice"]);
+            return true;
+        } catch (\Throwable $e) {
+            $this->getLogger()->logException($e);
+            return false;
+        }
+    }
 
-		$commands = [
-			"mymoney" => "\\onebone\\economyapi\\command\\MyMoneyCommand",
-			"topmoney" => "\\onebone\\economyapi\\command\\TopMoneyCommand",
-			"setmoney" => "\\onebone\\economyapi\\command\\SetMoneyCommand",
-			"seemoney" => "\\onebone\\economyapi\\command\\SeeMoneyCommand",
-			"givemoney" => "\\onebone\\economyapi\\command\\GiveMoneyCommand",
-			"takemoney" => "\\onebone\\economyapi\\command\\TakeMoneyCommand",
-			"pay" => "\\onebone\\economyapi\\command\\PayCommand",
-			"setlang" => "\\onebone\\economyapi\\command\\SetLangCommand",
-			"mystatus" => "\\onebone\\economyapi\\command\\MyStatusCommand"
-		];
-		foreach($commands as $cmd => $class){
-			$map->register("economyapi", new $class($this));
-		}
-	}
+    private function registerCommands()
+    {
+        $map = $this->getServer()->getCommandMap();
 
-	private function initializeLanguage(){
-		foreach($this->getResources() as $resource){
-			if($resource->isFile() and substr(($filename = $resource->getFilename()), 0, 5) === "lang_"){
-				$this->lang[substr($filename, 5, -5)] = json_decode(file_get_contents($resource->getPathname()), true);
-			}
-		}
-		$this->lang["user-define"] = (new Config($this->getDataFolder()."messages.yml", Config::YAML, $this->lang["def"]))->getAll();
-	}
+        $commands = [
+            "mymoney" => "\\onebone\\economyapi\\command\\MyMoneyCommand",
+            "topmoney" => "\\onebone\\economyapi\\command\\TopMoneyCommand",
+            "setmoney" => "\\onebone\\economyapi\\command\\SetMoneyCommand",
+            "seemoney" => "\\onebone\\economyapi\\command\\SeeMoneyCommand",
+            "givemoney" => "\\onebone\\economyapi\\command\\GiveMoneyCommand",
+            "takemoney" => "\\onebone\\economyapi\\command\\TakeMoneyCommand",
+            "pay" => "\\onebone\\economyapi\\command\\PayCommand",
+            "setlang" => "\\onebone\\economyapi\\command\\SetLangCommand",
+            "mystatus" => "\\onebone\\economyapi\\command\\MyStatusCommand"
+        ];
+        foreach ($commands as $cmd => $class) {
+            $map->register("economyapi", new $class($this));
+        }
+    }
+
+    private function initializeLanguage()
+    {
+        foreach ($this->getResources() as $resource) {
+            if ($resource->isFile() and substr(($filename = $resource->getFilename()), 0, 5) === "lang_") {
+                $this->lang[substr($filename, 5, -5)] = json_decode(file_get_contents($resource->getPathname()), true);
+            }
+        }
+        $this->lang["user-define"] = (new Config($this->getDataFolder() . "messages.yml", Config::YAML, $this->lang["def"]))->getAll();
+    }
 }
