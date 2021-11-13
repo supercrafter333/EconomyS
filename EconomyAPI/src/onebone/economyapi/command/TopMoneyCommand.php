@@ -26,61 +26,43 @@ use pocketmine\command\CommandSender;
 use onebone\economyapi\EconomyAPI;
 use onebone\economyapi\task\SortTask;
 
-if(version_compare(\pocketmine\API_VERSION, "3.0.0-ALPHA7") >= 0){
-	abstract class _TopMoneyCommand extends Command{
-		public function execute(CommandSender $sender, string $label, array $args): bool{
-			return $this->_execute($sender, $label, $args);
-		}
+class TopMoneyCommand extends Command
+{
 
-		abstract public function _execute(CommandSender $sender, string $label, array $args): bool;
-	}
-}else{
-	abstract class _TopMoneyCommand extends Command{
-		public function execute(CommandSender $sender, $label, array $args){
-			return $this->_execute($sender, $label, $args);
-		}
+    public function __construct(private EconomyAPI $plugin)
+    {
+        $desc = $plugin->getCommandMessage("topmoney");
+        parent::__construct("topmoney", $desc["description"], $desc["usage"]);
 
-		abstract public function _execute(CommandSender $sender, string $label, array $args): bool;
-	}
-}
+        $this->setPermission("economyapi.command.topmoney");
 
-class TopMoneyCommand extends _TopMoneyCommand{
-	/** @var EconomyAPI */
-	private $plugin;
+        $this->plugin = $plugin;
+    }
 
-	public function __construct(EconomyAPI $plugin){
-		$desc = $plugin->getCommandMessage("topmoney");
-		parent::__construct("topmoney", $desc["description"], $desc["usage"]);
+    public function execute(CommandSender $sender, string $label, array $params): bool
+    {
+        if (!$this->plugin->isEnabled()) return false;
+        if (!$this->testPermission($sender)) return false;
 
-		$this->setPermission("economyapi.command.topmoney");
+        $page = (int)array_shift($params);
 
-		$this->plugin = $plugin;
-	}
+        $server = $this->plugin->getServer();
 
-	public function _execute(CommandSender $sender, string $label, array $params): bool{
-		if(!$this->plugin->isEnabled()) return false;
-		if(!$this->testPermission($sender)) return false;
+        $banned = [];
+        foreach ($server->getNameBans()->getEntries() as $entry) {
+            if ($this->plugin->accountExists($entry->getName())) {
+                $banned[] = $entry->getName();
+            }
+        }
+        $ops = [];
+        foreach ($server->getOps()->getAll() as $op) {
+            if ($this->plugin->accountExists($op)) {
+                $ops[] = $op;
+            }
+        }
 
-		$page = (int)array_shift($params);
-
-		$server = $this->plugin->getServer();
-
-		$banned = [];
-		foreach($server->getNameBans()->getEntries() as $entry){
-			if($this->plugin->accountExists($entry->getName())){
-				$banned[] = $entry->getName();
-			}
-		}
-		$ops = [];
-		foreach($server->getOps()->getAll() as $op){
-			if($this->plugin->accountExists($op)){
-				$ops[] = $op;
-			}
-		}
-
-		$task = new SortTask($sender->getName(), $this->plugin->getAllMoney(), $this->plugin->getConfig()->get("add-op-at-rank"), $page, $ops, $banned);
-		$server->getScheduler()->scheduleAsyncTask($task);
-
-		return true;
-	}
+        $task = new SortTask($sender->getName(), $this->plugin->getAllMoney(), $this->plugin->getConfig()->get("add-op-at-rank"), $page, $ops, $banned);
+        $server->getAsyncPool()->submitTask($task);
+        return true;
+    }
 }

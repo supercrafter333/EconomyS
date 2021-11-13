@@ -5,62 +5,46 @@ namespace onebone\economyapi\command;
 use pocketmine\command\Command;
 use pocketmine\command\CommandSender;
 use pocketmine\utils\TextFormat;
-use pocketmine\Player;
+use pocketmine\player\Player;
 
 use onebone\economyapi\EconomyAPI;
 
-if(version_compare(\pocketmine\API_VERSION, "3.0.0-ALPHA7") >= 0){
-	abstract class _SeeMoneyCommand extends Command{
-		public function execute(CommandSender $sender, string $label, array $args): bool{
-			return $this->_execute($sender, $label, $args);
-		}
+class SeeMoneyCommand extends Command
+{
 
-		abstract public function _execute(CommandSender $sender, string $label, array $args): bool;
-	}
-}else{
-	abstract class _SeeMoneyCommand extends Command{
-		public function execute(CommandSender $sender, $label, array $args){
-			return $this->_execute($sender, $label, $args);
-		}
+    public function __construct(private EconomyAPI $plugin)
+    {
+        $desc = $plugin->getCommandMessage("seemoney");
+        parent::__construct("seemoney", $desc["description"], $desc["usage"]);
 
-		abstract public function _execute(CommandSender $sender, string $label, array $args): bool;
-	}
-}
+        $this->setPermission("economyapi.command.seemoney");
 
-class SeeMoneyCommand extends _SeeMoneyCommand{
-	private $plugin;
+        $this->plugin = $plugin;
+    }
 
-	public function __construct(EconomyAPI $plugin){
-		$desc = $plugin->getCommandMessage("seemoney");
-		parent::__construct("seemoney", $desc["description"], $desc["usage"]);
+    public function execute(CommandSender $sender, string $label, array $params): bool
+    {
+        if (!$this->plugin->isEnabled()) return false;
+        if (!$this->testPermission($sender)) {
+            return false;
+        }
 
-		$this->setPermission("economyapi.command.seemoney");
+        $player = array_shift($params);
+        if (trim($player) === "") {
+            $sender->sendMessage(TextFormat::RED . "Usage: " . $this->getUsage());
+            return true;
+        }
 
-		$this->plugin = $plugin;
-	}
+        if (($p = $this->plugin->getServer()->getPlayerByPrefix($player)) instanceof Player) {
+            $player = $p->getName();
+        }
 
-	public function _execute(CommandSender $sender, string $label, array $params): bool{
-		if(!$this->plugin->isEnabled()) return false;
-		if(!$this->testPermission($sender)){
-			return false;
-		}
-
-		$player = array_shift($params);
-		if(trim($player) === ""){
-			$sender->sendMessage(TextFormat::RED . "Usage: " . $this->getUsage());
-			return true;
-		}
-
-		if(($p = $this->plugin->getServer()->getPlayer($player)) instanceof Player){
-			$player = $p->getName();
-		}
-
-		$money = $this->plugin->myMoney($player);
-		if($money !== false){
-			$sender->sendMessage($this->plugin->getMessage("seemoney-seemoney", [$player, $money], $sender->getName()));
-		}else{
-			$sender->sendMessage($this->plugin->getMessage("player-never-connected", [$player], $sender->getName()));
-		}
-		return true;
-	}
+        $money = $this->plugin->myMoney($player);
+        if ($money !== false) {
+            $sender->sendMessage($this->plugin->getMessage("seemoney-seemoney", [$player, $money], $sender->getName()));
+        } else {
+            $sender->sendMessage($this->plugin->getMessage("player-never-connected", [$player], $sender->getName()));
+        }
+        return true;
+    }
 }

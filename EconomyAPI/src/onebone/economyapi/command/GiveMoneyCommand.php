@@ -5,32 +5,13 @@ namespace onebone\economyapi\command;
 use pocketmine\command\Command;
 use pocketmine\command\CommandSender;
 use pocketmine\utils\TextFormat;
-use pocketmine\Player;
+use pocketmine\player\Player;
 
 use onebone\economyapi\EconomyAPI;
 
-if(version_compare(\pocketmine\API_VERSION, "3.0.0-ALPHA7") >= 0){
-	abstract class _GiveMoneyCommand extends Command{
-		public function execute(CommandSender $sender, string $label, array $args): bool{
-			return $this->_execute($sender, $label, $args);
-		}
+class GiveMoneyCommand extends Command{
 
-		abstract public function _execute(CommandSender $sender, string $label, array $args): bool;
-	}
-}else{
-	abstract class _GiveMoneyCommand extends Command{
-		public function execute(CommandSender $sender, $label, array $args){
-			return $this->_execute($sender, $label, $args);
-		}
-
-		abstract public function _execute(CommandSender $sender, string $label, array $args): bool;
-	}
-}
-
-class GiveMoneyCommand extends _GiveMoneyCommand{
-	private $plugin;
-
-	public function __construct(EconomyAPI $plugin){
+	public function __construct(private EconomyAPI $plugin){
 		$desc = $plugin->getCommandMessage("givemoney");
 		parent::__construct("givemoney", $desc["description"], $desc["usage"]);
 
@@ -39,7 +20,7 @@ class GiveMoneyCommand extends _GiveMoneyCommand{
 		$this->plugin = $plugin;
 	}
 
-	public function _execute(CommandSender $sender, string $label, array $params): bool{
+	public function execute(CommandSender $sender, string $label, array $params): bool{
 		if(!$this->plugin->isEnabled()) return false;
 		if(!$this->testPermission($sender)){
 			return false;
@@ -53,11 +34,11 @@ class GiveMoneyCommand extends _GiveMoneyCommand{
 			return true;
 		}
 
-		if(($p = $this->plugin->getServer()->getPlayer($player)) instanceof Player){
+		if(($p = $this->plugin->getServer()->getPlayerByPrefix($player)) instanceof Player){
 			$player = $p->getName();
 		}
 
-		$result = $this->plugin->addMoney($player, $amount);
+		$result = $this->plugin->addMoney($player, $amount,false,'economyapi.command.give');
 		switch($result){
 			case EconomyAPI::RET_INVALID:
 			$sender->sendMessage($this->plugin->getMessage("givemoney-invalid-number", [$amount], $sender->getName()));
@@ -76,7 +57,6 @@ class GiveMoneyCommand extends _GiveMoneyCommand{
 			$sender->sendMessage($this->plugin->getMessage("player-never-connected", [$player], $sender->getName()));
 			break;
 		}
-
-		return true;
+        return true;
 	}
 }

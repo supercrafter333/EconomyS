@@ -1,11 +1,10 @@
 name: EconomySell
-version: "2.0.7"
-api:
-- 3.0.0-ALPHA7
-
+version: 2.0.10
+api: [3.0.0]
 main: onebone\economysell\EconomySell
 author: onebone
 depend: [EconomyAPI]
+mcpe-protocol: 361
 
 commands:
  sell:

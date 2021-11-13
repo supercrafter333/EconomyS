@@ -25,45 +25,45 @@ use pocketmine\event\Cancellable;
 use pocketmine\item\Item;
 use pocketmine\event\Event;
 use pocketmine\level\Position;
-use pocketmine\Player;
+use pocketmine\player\Player;
 
 class SellTransactionEvent extends Event implements Cancellable{
-	public static $handlerList;
+    public static $handlerList;
 
-	private $player, $position, $item, $price;
+    private $player, $position, $item, $price;
 
-	public function __construct(Player $player, Position $position, Item $item, $price){
-		$this->player = $player;
-		$this->position = $position;
-		$this->item = $item;
-		$this->price = $price;
-	}
+    public function __construct(Player $player, Position $position, Item $item, $price){
+        $this->player = $player;
+        $this->position = $position;
+        $this->item = $item;
+        $this->price = $price;
+    }
 
-	/**
-	 * @return Player
-	 */
-	public function getPlayer(){
-		return $this->player;
-	}
+    /**
+     * @return Player
+     */
+    public function getPlayerByPrefix(){
+        return $this->player;
+    }
 
-	/**
-	 * @return Position
-	 */
-	public function getPosition(){
-		return $this->position;
-	}
+    /**
+     * @return Position
+     */
+    public function getPosition(){
+        return $this->position;
+    }
 
-	/**
-	 * @return Item
-	 */
-	public function getItem(){
-		return $this->item;
-	}
+    /**
+     * @return Item
+     */
+    public function getItem(){
+        return $this->item;
+    }
 
-	/**
-	 * @return float
-	 */
-	public function getPrice(){
-		return $this->price;
-	}
+    /**
+     * @return float
+     */
+    public function getPrice(){
+        return $this->price;
+    }
 }

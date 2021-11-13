@@ -28,7 +28,7 @@ use pocketmine\event\Listener;
 use pocketmine\event\block\BlockBreakEvent;
 use pocketmine\event\block\BlockPlaceEvent;
 use pocketmine\utils\TextFormat;
-use pocketmine\Player;
+use pocketmine\player\Player;
 
 use onebone\economyapi\EconomyAPI;
 
@@ -81,7 +81,7 @@ class EconomyJob extends PluginBase implements Listener{
 	 * @param BlockBreakEvent $event
 	 */
 	public function onBlockBreak(BlockBreakEvent $event){
-		$player = $event->getPlayer();
+		$player = $event->getPlayerByPrefix();
 		$block = $event->getBlock();
 
 		$job = $this->jobs->get($this->player->get($player->getName()));
@@ -103,7 +103,7 @@ class EconomyJob extends PluginBase implements Listener{
 	 * @param BlockPlaceEvent $event
 	 */
 	public function onBlockPlace(BlockPlaceEvent $event){
-		$player = $event->getPlayer();
+		$player = $event->getPlayerByPrefix();
 		$block = $event->getBlock();
 
 		$job = $this->jobs->get($this->player->get($player->getName()));

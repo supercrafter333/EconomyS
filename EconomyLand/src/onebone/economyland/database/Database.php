@@ -20,7 +20,7 @@
 
 namespace onebone\economyland\database;
 
-use pocketmine\Player;
+use pocketmine\player\Player;
 
 interface Database{
 	public function __construct($fileName, $config, $otherName);

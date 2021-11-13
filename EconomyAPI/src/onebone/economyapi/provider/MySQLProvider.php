@@ -24,7 +24,7 @@ namespace onebone\economyapi\provider;
 use onebone\economyapi\EconomyAPI;
 use onebone\economyapi\task\MySQLPingTask;
 
-use pocketmine\Player;
+use pocketmine\player\Player;
 
 class MySQLProvider implements Provider{
 	/**
@@ -33,9 +33,7 @@ class MySQLProvider implements Provider{
 	private $db;
 
 	/** @var EconomyAPI */
-	private $plugin;
-
-	public function __construct(EconomyAPI $plugin){
+	public function __construct(private EconomyAPI $plugin){
 		$this->plugin = $plugin;
 	}
 
@@ -60,11 +58,11 @@ class MySQLProvider implements Provider{
 			return;
 		}
 
-		$this->plugin->getServer()->getScheduler()->scheduleRepeatingTask(new MySQLPingTask($this->plugin, $this->db), 600);
+		$this->plugin->getScheduler()->scheduleRepeatingTask(new MySQLPingTask($this->plugin, $this->db), 600);
 	}
 
 	/**
-	 * @param \pocketmine\Player|string $player
+	 * @param \pocketmine\player\Player|string $player
 	 * @return bool
 	 */
 	public function accountExists($player){
@@ -78,7 +76,7 @@ class MySQLProvider implements Provider{
 	}
 
 	/**
-	 * @param \pocketmine\Player|string $player
+	 * @param \pocketmine\player\Player|string $player
 	 * @param float $defaultMoney
 	 * @return bool
 	 */
@@ -96,7 +94,7 @@ class MySQLProvider implements Provider{
 	}
 
 	/**
-	 * @param \pocketmine\Player|string $player
+	 * @param \pocketmine\player\Player|string $player
 	 * @return bool
 	 */
 	public function removeAccount($player){
@@ -126,7 +124,7 @@ class MySQLProvider implements Provider{
 	}
 
 	/**
-	 * @param \pocketmine\Player|string $player
+	 * @param \pocketmine\player\Player|string $player
 	 * @param float $amount
 	 * @return bool
 	 */
@@ -142,7 +140,7 @@ class MySQLProvider implements Provider{
 	}
 
 	/**
-	 * @param \pocketmine\Player|string $player
+	 * @param \pocketmine\player\Player|string $player
 	 * @param float $amount
 	 * @return bool
 	 */
@@ -158,7 +156,7 @@ class MySQLProvider implements Provider{
 	}
 
 	/**
-	 * @param \pocketmine\Player|string $player
+	 * @param \pocketmine\player\Player|string $player
 	 * @param float $amount
 	 * @return bool
 	 */

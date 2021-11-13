@@ -71,7 +71,7 @@ class LandAddedEvent extends  Event{
 		return $this->expires;
 	}
 
-	public function getPlayer(){
+	public function getPlayerByPrefix(){
 		return $this->player;
 	}
 }

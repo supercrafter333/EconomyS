@@ -28,10 +28,12 @@ use pocketmine\event\Listener;
 use pocketmine\event\player\PlayerInteractEvent;
 use pocketmine\event\player\PlayerJoinEvent;
 use pocketmine\event\entity\EntityTeleportEvent;
+use pocketmine\event\player\PlayerMoveEvent;
 use pocketmine\item\Item;
+use pocketmine\item\ItemFactory;
 use pocketmine\level\Position;
 use pocketmine\math\Vector3;
-use pocketmine\Player;
+use pocketmine\player\Player;
 use pocketmine\plugin\PluginBase;
 use pocketmine\utils\TextFormat;
 
@@ -51,7 +53,7 @@ class EconomyShop extends PluginBase implements Listener{
 
 	private $lang;
 
-	private $queue = [], $tap = [], $removeQueue = [], $placeQueue = [];
+	private $queue = [], $tap = [], $removeQueue = [], $placeQueue = [], $canBuy = [];
 
 	/** @var ItemDisplayer[][] */
 	private $items = [];
@@ -76,16 +78,17 @@ class EconomyShop extends PluginBase implements Listener{
 
 		$levels = [];
 		foreach($this->provider->getAll() as $shop){
-			if($shop[9] !== -2){
-				if(!isset($levels[$shop[3]])){
-					$levels[$shop[3]] = $this->getServer()->getLevelByName($shop[3]);
+			if(!isset($shop[9]) or $shop[9] !== -2){
+				$level = $shop["level"] ?? $shop[3];
+				if(!isset($levels[$level])){
+					$levels[$level] = $this->getServer()->getLevelByName($level);
 				}
-				$pos = new Position($shop[0], $shop[1], $shop[2], $levels[$shop[3]]);
+				$pos = new Position($shop["x"] ?? $shop[0], $shop["y"] ?? $shop[1], $shop["z"] ?? $shop[2], $levels[$level]);
 				$display = $pos;
-				if($shop[9] !== -1){
+				if(isset($shop[9]) && $shop[9] !== -1){
 					$display = $pos->getSide($shop[9]);
 				}
-				$this->items[$shop[3]][] = new ItemDisplayer($display, Item::get($shop[4], $shop[5]), $pos);
+				$this->items[$level][] = new ItemDisplayer($display, Itemfactory::get((int) ($shop["item"] ?? $shop[4]), (int) ($shop["meta"] ?? $shop[5]), (int) ($shop["amount"] ?? $shop[7])), $pos);
 			}
 		}
 
@@ -170,16 +173,16 @@ class EconomyShop extends PluginBase implements Listener{
 
 						return true;
 				}
-				return false;
 		}
+		return false;
 	}
 
 	public function onPlayerJoin(PlayerJoinEvent $event){
-		$player = $event->getPlayer();
+		$player = $event->getPlayerByPrefix();
 		$level = $player->getLevel()->getFolderName();
-
-		if(isset($this->items[$level])){
-			foreach($this->items[$level] as $displayer){
+		$this->canBuy[strtolower($player->getName())] = true;
+		if (isset($this->items[$level])) {
+			foreach ($this->items[$level] as $displayer) {
 				$displayer->spawnTo($player);
 			}
 		}
@@ -208,12 +211,17 @@ class EconomyShop extends PluginBase implements Listener{
 			return;
 		}
 
-		$player = $event->getPlayer();
+		$player = $event->getPlayerByPrefix();
 		$block = $event->getBlock();
 
 		$iusername = strtolower($player->getName());
 
 		if(isset($this->queue[$iusername])){
+			$signIds = [Item::SIGN, Item::SIGN_POST, Item::WALL_SIGN];
+			if(!$this->getConfig()->get("allow-any-block", true) && !in_array($block->getItemId(), $signIds)) {
+				$player->sendMessage($this->getMessage("shop-create-allow-any-block"));
+				return;
+			}
 			$queue = $this->queue[$iusername];
 			$item = Item::fromString($queue[0]);
 			$item->setCount($queue[1]);
@@ -258,7 +266,7 @@ class EconomyShop extends PluginBase implements Listener{
 			foreach($this->items as $level => $arr){
 				foreach($arr as $key => $displayer){
 					$link = $displayer->getLinked();
-					if($link->getX() === $shop[0] and $link->getY() === $shop[1] and $link->getZ() === $shop[2] and $link->getLevel()->getFolderName() === $shop[3]){
+					if($link->getLevel() !== null && ($link->getX() === ($shop["x"] ?? $shop[0])) && ($link->getY() === ($shop["y"] ?? $shop[1])) && ($link->getZ() === ($shop["z"] ?? $shop[2])) && $link->getLevel()->getFolderName() === ($shop["level"] ?? $shop[3])){
 						$displayer->despawnFromAll();
 						unset($this->items[$key]);
 						break 2;
@@ -277,28 +285,34 @@ class EconomyShop extends PluginBase implements Listener{
 			return;
 		}
 
-		if(($shop = $this->provider->getShop($block)) !== false){
-			if($this->getConfig()->get("enable-double-tap")){
+		if (($shop = $this->provider->getShop($block)) !== false && $this->canBuy[$iusername] == true) {
+			if ($this->getConfig()->get("enable-double-tap")) {
 				$now = time();
 				if(isset($this->tap[$iusername]) and $now - $this->tap[$iusername] < 1){
 					$this->buyItem($player, $shop);
 					unset($this->tap[$iusername]);
 				}else{
 					$this->tap[$iusername] = $now;
-					$player->sendMessage($this->getMessage("tap-again", [$shop[6], $shop[7], $shop[8]]));
+					$player->sendMessage($this->getMessage("tap-again", [$shop["itemName"] ?? $shop[6], $shop["amount"] ?? $shop[7], $shop["price"] ?? $shop[8]]));
+					return;
 				}
-			}else{
+			} else {
 				$this->buyItem($player, $shop);
 			}
-
-			if($event->getItem()->canBePlaced()){
+			if ($event->getItem()->canBePlaced()) {
 				$this->placeQueue[$iusername] = true;
 			}
+			$this->canBuy[$iusername] = false;
 		}
 	}
 
+	public function onPlayerMove(PlayerMoveEvent $event) {
+		$iusername = strtolower($event->getPlayerByPrefix()->getName());
+		$this->canBuy[$iusername] = true;
+	}
+
 	public function onBlockPlace(BlockPlaceEvent $event){
-		$iusername = strtolower($event->getPlayer()->getName());
+		$iusername = strtolower($event->getPlayerByPrefix()->getName());
 		if(isset($this->placeQueue[$iusername])){
 			$event->setCancelled();
 			unset($this->placeQueue[$iusername]);
@@ -308,7 +322,7 @@ class EconomyShop extends PluginBase implements Listener{
 	public function onBlockBreak(BlockBreakEvent $event){
 		$block = $event->getBlock();
 		if($this->provider->getShop($block) !== false){
-			$player = $event->getPlayer();
+			$player = $event->getPlayerByPrefix();
 
 			$event->setCancelled(true);
 			$player->sendMessage($this->getMessage("shop-breaking-forbidden"));
@@ -325,20 +339,25 @@ class EconomyShop extends PluginBase implements Listener{
 		}
 
 		$money = EconomyAPI::getInstance()->myMoney($player);
-		if($money < $shop[8]){
-			$player->sendMessage($this->getMessage("no-money", [$shop[8], $shop[6]]));
+		if($money < ($shop["price"] ?? $shop[8])){
+			$player->sendMessage($this->getMessage("no-money", [$shop["price"] ?? $shop[8], $shop["itemName"] ?? $shop[6]]));
 		}else{
-			$item = Item::get($shop[4], $shop[5], $shop[7]);
+			if (is_string($shop["item"] ?? $shop[4])){
+				$itemId = ItemFactory::fromString((string) ($shop["item"] ?? $shop[4]), false)->getId();
+			}else{
+				$itemId = ItemFactory::get((int) ($shop["item"] ?? $shop[4]), false)->getId();
+			}
+			$item = ItemFactory::get($itemId, (int) ($shop["meta"] ?? $shop[5]), (int) ($shop["amount"] ?? $shop[7]));
 			if($player->getInventory()->canAddItem($item)){
-				$ev = new ShopTransactionEvent($player, new Position($shop[0], $shop[1], $shop[2], $this->getServer()->getLevelByName($shop[3])), $item, $shop[8]);
+				$ev = new ShopTransactionEvent($player, new Position($shop["x"] ?? $shop[0], $shop["y"] ?? $shop[1], $shop["z"] ?? $shop[2], $this->getServer()->getLevelByName($shop["level"] ?? $shop[3])), $item, ($shop["price"] ?? $shop[8]));
 				$this->getServer()->getPluginManager()->callEvent($ev);
 				if($ev->isCancelled()){
 					$player->sendMessage($this->getMessage("failed-buy"));
 					return true;
 				}
 				$player->getInventory()->addItem($item);
-				$player->sendMessage($this->getMessage("bought-item", [$shop[6], $shop[7], $shop[8]]));
-				EconomyAPI::getInstance()->reduceMoney($player, $shop[8]);
+				$player->sendMessage($this->getMessage("bought-item", [$shop["itemName"] ?? $shop[6], $shop["amount"] ?? $shop[7], $shop["price"] ?? $shop[8]]));
+				EconomyAPI::getInstance()->reduceMoney($player, $shop["price"] ?? $shop[8]);
 			}else{
 				$player->sendMessage($this->getMessage("full-inventory"));
 			}
@@ -355,8 +374,8 @@ class EconomyShop extends PluginBase implements Listener{
 
 			$search[] = "%MONETARY_UNIT%";
 			$replace[] = EconomyAPI::getInstance()->getMonetaryUnit();
-
-			for($i = 1; $i <= count($replacement); $i++){
+			$replacecount = count($replacement);
+			for($i = 1; $i <= $replacecount; $i++){
 				$search[] = "%".$i;
 				$replace[] = $replacement[$i - 1];
 			}
