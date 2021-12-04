@@ -20,6 +20,7 @@
 
 namespace onebone\economyland;
 
+use Closure;
 use pocketmine\math\Vector3;
 use pocketmine\plugin\PluginBase;
 use pocketmine\event\Listener;
@@ -35,7 +36,6 @@ use pocketmine\Server;
 use pocketmine\level\Position;
 use pocketmine\level\Level;
 use pocketmine\event\EventPriority;
-use pocketmine\plugin\MethodEventExecutor;
 
 use onebone\economyapi\EconomyAPI;
 use onebone\economyland\database\YamlDatabase;
@@ -62,7 +62,7 @@ class EconomyLand extends PluginBase implements Listener{
 	const RET_LAND_LIMIT = 1;
 	const RET_SUCCESS = 2;
 
-	public function onEnable(){
+	public function onEnable(): void{
 
 		if(!static::$instance instanceof EconomyLand){
 			static::$instance = $this;
@@ -105,10 +105,10 @@ class EconomyLand extends PluginBase implements Listener{
 				$this->db = new YamlDatabase($this->getDataFolder()."Land.yml", $this->getConfig(), $this->getDataFolder()."Land.sqlite3");
 				$this->getLogger()->alert("Specified database type is unavailable. Database type is YAML.");
 		}
-
-		$this->getServer()->getPluginManager()->registerEvent("pocketmine\\event\\block\\BlockPlaceEvent", $this, EventPriority::HIGHEST, new MethodEventExecutor("onPlaceEvent"), $this);
-		$this->getServer()->getPluginManager()->registerEvent("pocketmine\\event\\block\\BlockBreakEvent", $this, EventPriority::HIGHEST, new MethodEventExecutor("onBreakEvent"), $this);
-		$this->getServer()->getPluginManager()->registerEvent("pocketmine\\event\\player\\PlayerInteractEvent", $this, EventPriority::HIGHEST, new MethodEventExecutor("onPlayerInteract"), $this);
+		$this->getServer()->getPluginManager()->registerEvent("pocketmine\\event\\block\\BlockPlaceEvent", Closure::fromCallable([$this, 'onPlaceEvent']), EventPriority::HIGHEST, $this);
+		$this->getServer()->getPluginManager()->registerEvent("pocketmine\\event\\block\\BlockBreakEvent", Closure::fromCallable([$this, 'onBreakEvent']), EventPriority::HIGHEST, $this);
+		$this->getServer()->getPluginManager()->registerEvent("pocketmine\\event\\player\\PlayerInteractEvent", Closure::fromCallable([$this, 'onPlayerInteract']), EventPriority::HIGHEST, $this);
+	
 	}
 
 	public function expireLand($landId){
@@ -126,7 +126,7 @@ class EconomyLand extends PluginBase implements Listener{
 		return;
 	}
 
-	public function onDisable(){
+	public function onDisable(): void{
         if (Server::getInstance()->isRunning()) {
             $this->save();
             if($this->db instanceof Database){
@@ -161,9 +161,9 @@ class EconomyLand extends PluginBase implements Listener{
 				$sender->sendMessage($this->getMessage("run-cmd-in-game"));
 				return true;
 			}
-			$x = (int) floor($sender->x);
-			$z = (int) floor($sender->z);
-			$level = $sender->getLevel()->getFolderName();
+			$x = (int) floor($sender->getPosition()->x);
+			$z = (int) floor($sender->getPosition()->z);
+			$level = $sender->getPosition()->getWorld()->getFolderName();
 			$this->start[$sender->getName()] = array("x" => $x, "z" => $z, "level" => $level);
 			$sender->sendMessage($this->getMessage("first-position-saved"));
 			return true;
@@ -176,15 +176,15 @@ class EconomyLand extends PluginBase implements Listener{
 				$sender->sendMessage($this->getMessage("set-first-position"));
 				return true;
 			}
-			if($sender->getLevel()->getFolderName() !== $this->start[$sender->getName()]["level"]){
+			if($sender->getPosition()->getWorld()->getFolderName() !== $this->start[$sender->getName()]["level"]){
 				$sender->sendMessage($this->getMessage("cant-set-position-in-different-world"));
 				return true;
 			}
 
 			$startX = (int) $this->start[$sender->getName()]["x"];
 			$startZ = (int) $this->start[$sender->getName()]["z"];
-			$endX = (int) floor($sender->x);
-			$endZ = (int) floor($sender->z);
+			$endX = (int) floor($sender->getPosition()->x);
+			$endZ = (int) floor($sender->getPosition()->z);
 			$this->end[$sender->getName()] = array(
 				"x" => $endX,
 				"z" => $endZ
@@ -206,7 +206,7 @@ class EconomyLand extends PluginBase implements Listener{
 			$price = (($endX - $startX) - 1) * (($endZ - $startZ) - 1) * $this->getConfig()->get("price-per-y-axis", 100);
 			$sender->sendMessage($this->getMessage("confirm-buy-land", array($price, "%2", "%3")));
 
-			if(($land = $this->db->checkOverlap($startX, $endX, $startZ, $endZ, $sender->getLevel())) !== false){
+			if(($land = $this->db->checkOverlap($startX, $endX, $startZ, $endZ, $sender->getPosition()->getWorld())) !== false){
 				$sender->sendMessage($this->getMessage("confirm-warning", [$land["ID"], "%2", "%3"]));
 			}
 			return true;
@@ -223,7 +223,7 @@ class EconomyLand extends PluginBase implements Listener{
 					return true;
 				}
 
-				if(in_array($sender->getLevel()->getFolderName(), $this->getConfig()->get("buying-disallowed-worlds", []))){
+				if(in_array($sender->getPosition()->getWorld()->getFolderName(), $this->getConfig()->get("buying-disallowed-worlds", []))){
 					$sender->sendMessage($this->getMessage("not-allowed-to-buy"));
 					return true;
 				}
@@ -260,7 +260,7 @@ class EconomyLand extends PluginBase implements Listener{
 					$endZ = $backup;
 				}
 
-				$result = $this->db->checkOverlap($startX, $endX, $startZ, $endZ, $sender->getLevel()->getFolderName());
+				$result = $this->db->checkOverlap($startX, $endX, $startZ, $endZ, $sender->getPosition()->getWorld()->getFolderName());
 				if($result){
 					$sender->sendMessage($this->getMessage("land-around-here", array($result["owner"], $result["ID"], "%3")));
 					return true;
@@ -271,7 +271,7 @@ class EconomyLand extends PluginBase implements Listener{
 					return true;
 				}
 
-				$this->db->addLand($startX, $endX, $startZ, $endZ, $sender->getLevel()->getFolderName(), $price, $sender->getName());
+				$this->db->addLand($startX, $endX, $startZ, $endZ, $sender->getPosition()->getWorld()->getFolderName(), $price, $sender->getName());
 				unset($this->start[$sender->getName()], $this->end[$sender->getName()]);
 				$sender->sendMessage($this->getMessage("bought-land", array($price, "%2", "%3")));
 				break;
@@ -354,7 +354,7 @@ class EconomyLand extends PluginBase implements Listener{
 						return true;
 					}
 				}
-				$level = $this->getServer()->getLevelByName($info["level"]);
+				$level = $this->getServer()->getWorldByName($info["level"]);
 				if(!$level instanceof Level){
 					$sender->sendMessage($this->getMessage("land-corrupted", array($num, $info["level"], "")));
 					return true;
@@ -518,10 +518,10 @@ class EconomyLand extends PluginBase implements Listener{
 					$sender->sendMessage($this->getMessage("run-cmd-in-game"));
 					return true;
 				}
-				$x = $sender->x;
-				$z = $sender->z;
+				$x = $sender->getPosition()->x;
+				$z = $sender->getPosition()->z;
 
-				$info = $this->db->getByCoord($x, $z, $sender->getLevel()->getFolderName());
+				$info = $this->db->getByCoord($x, $z, $sender->getPosition()->getWorld()->getFolderName());
 				if($info === false){
 					$sender->sendMessage($this->getMessage("no-one-owned"));
 					return true;
@@ -543,7 +543,7 @@ class EconomyLand extends PluginBase implements Listener{
 				$x = $sender->getX();
 				$z = $sender->getZ();
 
-				$info = $this->db->getByCoord($x, $z, $sender->getLevel()->getFolderName());
+				$info = $this->db->getByCoord($x, $z, $sender->getPosition()->getWorld()->getFolderName());
 				if($info === false){
 					$sender->sendMessage($this->getMessage("no-one-owned"));
 					return true;
@@ -589,9 +589,9 @@ class EconomyLand extends PluginBase implements Listener{
 	}
 
 	public function onPlaceEvent(BlockPlaceEvent $event){
-		$name = $event->getPlayerByPrefix()->getName();
+		$name = $event->getPlayer()->getName();
 		if(isset($this->placeQueue[$name])){
-			$event->setCancelled();
+			$event->cancel();
 			unset($this->placeQueue[$name]);
 		}
 	}
@@ -602,27 +602,25 @@ class EconomyLand extends PluginBase implements Listener{
 
 	public function permissionCheck(Event $event){
 		/** @var $player Player */
-		$player = $event->getPlayerByPrefix();
+		$player = $event->getPlayer();
 		if($event instanceof PlayerInteractEvent){
 			$block = $event->getBlock()->getSide($event->getFace());
 		}else{
 			$block = $event->getBlock();
 		}
 
-		$x = $block->getX();
-		$z = $block->getZ();
-		$level = $block->getLevel()->getFolderName();
-
+		$x = $block->getPosition()->x;
+		$z = $block->getPosition()->z;
+		$level = $block->getPosition()->getWorld()->getFolderName();
 		if(in_array($level, $this->getConfig()->get("non-check-worlds", []))){
 			return false;
 		}
-
 		$info = $this->db->canTouch($x, $z, $level, $player);
 		if($info === -1){
 			if($this->getConfig()->get("white-world-protection", [])){
 				if(in_array($level, $this->getConfig()->get("white-world-protection", [])) and !$player->hasPermission("economyland.land.modify.whiteland")){
 					$player->sendMessage($this->getMessage("not-owned"));
-					$event->setCancelled();
+					$event->cancel();
 					if($event->getItem()->canBePlaced()){
 						$this->placeQueue[$player->getName()] = true;
 					}
@@ -631,7 +629,7 @@ class EconomyLand extends PluginBase implements Listener{
 			}
 		}elseif($info !== true){
 			$player->sendMessage($this->getMessage("no-permission", array($info["owner"], "", "")));
-			$event->setCancelled();
+			$event->cancel();
 			if($event instanceof PlayerInteractEvent){
 				if($event->getItem()->canBePlaced()){
 					$this->placeQueue[$player->getName()] = true;
