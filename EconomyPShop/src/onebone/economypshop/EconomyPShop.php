@@ -21,7 +21,7 @@
 namespace onebone\economypshop;
 
 use pocketmine\item\ItemFactory;
-use pocketmine\level\Position;
+use pocketmine\world\Position;
 use pocketmine\player\Player;
 use pocketmine\Server;
 use pocketmine\event\block\BlockBreakEvent;
@@ -51,7 +51,7 @@ class EconomyPShop extends PluginBase implements Listener{
 	/**
 	 * @throws \TypeError
 	 */
-	public function onEnable(){
+	public function onEnable(): void{
 		if(!file_exists($this->getDataFolder())){
 			mkdir($this->getDataFolder());
 		}
@@ -100,7 +100,8 @@ class EconomyPShop extends PluginBase implements Listener{
 		$this->placeQueue = [];
 	}
 
-	public function onDisable(){
+	public function onDisable(): void
+    {
 		if(Server::getInstance()->isRunning()){
 			$this->saveShops();
 		}
@@ -219,7 +220,7 @@ class EconomyPShop extends PluginBase implements Listener{
 		$block = $event->getBlock();
 		$loc = $block->getX() . ":" . $block->getY() . ":" . $block->getZ() . ":" . $block->getLevel()->getFolderName();
 		if(isset($this->shop[$loc])){
-			$player = $event->getPlayerByPrefix();
+			$player = $event->getPlayer();
 			$shop = $this->shop[$loc];
 
 			if($shop["owner"] == $player->getName()){
@@ -259,7 +260,7 @@ class EconomyPShop extends PluginBase implements Listener{
 		}
 		$block = $event->getBlock();
 		$loc = $block->getX() . ":" . $block->getY() . ":" . $block->getZ() . ":" . $block->getLevel()->getFolderName();
-		$player = $event->getPlayerByPrefix();
+		$player = $event->getPlayer();
 		if(isset($this->shop[$loc])){
 			if($player->hasPermission("economypshop.shop.buy")){
 				$shop = $this->shop[$loc];
@@ -367,7 +368,7 @@ class EconomyPShop extends PluginBase implements Listener{
 	}
 
 	public function onBlockPlace(BlockPlaceEvent $event){
-		$user = $event->getPlayerByPrefix()->getName();
+		$user = $event->getPlayer()->getName();
 		if(isset($this->placeQueue[$user])){
 			$event->setCancelled();
 			unset($this->placeQueue[$user]);
@@ -375,7 +376,7 @@ class EconomyPShop extends PluginBase implements Listener{
 	}
 
 	public function onPlayerJoin(PlayerJoinEvent $event){
-		$player = $event->getPlayerByPrefix();
+		$player = $event->getPlayer();
 		$level = $player->getLevel()->getFolderName();
 
 		if(isset($this->items[$level])){

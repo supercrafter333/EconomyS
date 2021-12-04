@@ -23,7 +23,7 @@ namespace onebone\economyshop\item;
 use pocketmine\entity\Entity;
 use pocketmine\item\Item;
 use pocketmine\level\Level;
-use pocketmine\level\Position;
+use pocketmine\world\Position;
 use pocketmine\math\Vector3;
 use pocketmine\network\mcpe\protocol\AddItemActorPacket as AddItemEntityPacket;
 use pocketmine\network\mcpe\protocol\RemoveActorPacket as RemoveEntityPacket;

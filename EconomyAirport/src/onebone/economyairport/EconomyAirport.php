@@ -24,7 +24,7 @@ use pocketmine\event\block\BlockBreakEvent;
 use pocketmine\event\block\SignChangeEvent;
 use pocketmine\event\player\PlayerInteractEvent;
 use pocketmine\level\Level;
-use pocketmine\level\Position;
+use pocketmine\world\Position;
 use pocketmine\math\Vector3;
 use pocketmine\plugin\PluginBase;
 use pocketmine\event\Listener;
@@ -41,7 +41,7 @@ class EconomyAirport extends PluginBase  implements Listener{
 	 */
 	private $lang, $tag;
 
-	public function onEnable(){
+	public function onEnable(): void{
 		if(!file_exists($this->getDataFolder())){
 			mkdir($this->getDataFolder());
 		}
@@ -59,7 +59,8 @@ class EconomyAirport extends PluginBase  implements Listener{
 		$this->getServer()->getPluginManager()->registerEvents($this, $this);
 	}
 
-	public function onDisable(){
+	public function onDisable(): void
+    {
 		$airportYml = new Config($this->getDataFolder()."AirportData.yml", Config::YAML);
 		$airportYml->setAll($this->airport);
 		$airportYml->save();
@@ -67,7 +68,7 @@ class EconomyAirport extends PluginBase  implements Listener{
 
 	public function onSignChange(SignChangeEvent $event){
 		if(($data = $this->checkTag($event->getLine(0), $event->getLine(1))) !== false){
-			$player = $event->getPlayerByPrefix();
+			$player = $event->getPlayer();
 			if(!$player->hasPermission("economyairport.create")){
 				$player->sendMessage($this->getMessage("no-permission-create"));
 				return;
@@ -150,7 +151,7 @@ class EconomyAirport extends PluginBase  implements Listener{
 			if($airport["type"] === 1)
 				return;
 				
-			$player = $event->getPlayerByPrefix();
+			$player = $event->getPlayer();
 			if(isset($this->airport[$airport["targetX"].":".$airport["targetY"].":".$airport["targetZ"].":".$airport["targetLevel"]]) and $this->airport[$airport["targetX"].":".$airport["targetY"].":".$airport["targetZ"].":".$airport["targetLevel"]]["type"] === 1){
 				$money = EconomyAPI::getInstance()->myMoney($player);
 				if(!$block->getLevel()->getTile(new Vector3($airport["targetX"], $airport["targetY"], $airport["targetZ"], $airport["targetLevel"])) instanceof Sign){
@@ -186,7 +187,7 @@ class EconomyAirport extends PluginBase  implements Listener{
 	public function onBlockBreak(BlockBreakEvent $event){
 		$block = $event->getBlock();
 		if(isset($this->airport[$block->getX().":".$block->getY().":".$block->getZ().":".$block->getLevel()->getFolderName()])){
-			$player = $event->getPlayerByPrefix();
+			$player = $event->getPlayer();
 			if(!$player->hasPermission("economyairport.remove")){
 				$player->sendMessage($this->getMessage("no-permission-break"));
 				return;

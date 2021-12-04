@@ -31,7 +31,7 @@ use pocketmine\event\entity\EntityTeleportEvent;
 use pocketmine\event\player\PlayerMoveEvent;
 use pocketmine\item\Item;
 use pocketmine\item\ItemFactory;
-use pocketmine\level\Position;
+use pocketmine\world\Position;
 use pocketmine\math\Vector3;
 use pocketmine\player\Player;
 use pocketmine\plugin\PluginBase;
@@ -58,7 +58,7 @@ class EconomyShop extends PluginBase implements Listener{
 	/** @var ItemDisplayer[][] */
 	private $items = [];
 
-	public function onEnable(){
+	public function onEnable(): void{
 		$this->saveDefaultConfig();
 
 		if(!$this->selectLang()){
@@ -178,7 +178,7 @@ class EconomyShop extends PluginBase implements Listener{
 	}
 
 	public function onPlayerJoin(PlayerJoinEvent $event){
-		$player = $event->getPlayerByPrefix();
+		$player = $event->getPlayer();
 		$level = $player->getLevel()->getFolderName();
 		$this->canBuy[strtolower($player->getName())] = true;
 		if (isset($this->items[$level])) {
@@ -211,7 +211,7 @@ class EconomyShop extends PluginBase implements Listener{
 			return;
 		}
 
-		$player = $event->getPlayerByPrefix();
+		$player = $event->getPlayer();
 		$block = $event->getBlock();
 
 		$iusername = strtolower($player->getName());
@@ -307,12 +307,12 @@ class EconomyShop extends PluginBase implements Listener{
 	}
 
 	public function onPlayerMove(PlayerMoveEvent $event) {
-		$iusername = strtolower($event->getPlayerByPrefix()->getName());
+		$iusername = strtolower($event->getPlayer()->getName());
 		$this->canBuy[$iusername] = true;
 	}
 
 	public function onBlockPlace(BlockPlaceEvent $event){
-		$iusername = strtolower($event->getPlayerByPrefix()->getName());
+		$iusername = strtolower($event->getPlayer()->getName());
 		if(isset($this->placeQueue[$iusername])){
 			$event->setCancelled();
 			unset($this->placeQueue[$iusername]);
@@ -322,7 +322,7 @@ class EconomyShop extends PluginBase implements Listener{
 	public function onBlockBreak(BlockBreakEvent $event){
 		$block = $event->getBlock();
 		if($this->provider->getShop($block) !== false){
-			$player = $event->getPlayerByPrefix();
+			$player = $event->getPlayer();
 
 			$event->setCancelled(true);
 			$player->sendMessage($this->getMessage("shop-breaking-forbidden"));
@@ -432,7 +432,8 @@ class EconomyShop extends PluginBase implements Listener{
 		}
 	}
 
-	public function onDisable(){
+	public function onDisable(): void
+    {
 		if($this->provider instanceof DataProvider){
 			$this->provider->close();
 		}

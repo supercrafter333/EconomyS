@@ -27,7 +27,7 @@ use pocketmine\event\player\PlayerInteractEvent;
 use pocketmine\event\block\BlockBreakEvent;
 use pocketmine\event\block\BlockPlaceEvent;
 use pocketmine\level\Level;
-use pocketmine\level\Position;
+use pocketmine\world\Position;
 use pocketmine\math\Vector3;
 use pocketmine\block\SignPost;
 use pocketmine\block\Air;
@@ -61,7 +61,7 @@ class EconomyProperty extends PluginBase implements Listener{
 	 */
 	private $command;
 
-	public function onEnable(){
+	public function onEnable(): void{
 		if(!file_exists($this->getDataFolder())){
 			mkdir($this->getDataFolder());
 		}
@@ -98,7 +98,8 @@ class EconomyProperty extends PluginBase implements Listener{
 		}
 	}
 
-	public function onDisable(){
+	public function onDisable(): void
+    {
 		$this->property->close();
 	}
 
@@ -108,7 +109,7 @@ class EconomyProperty extends PluginBase implements Listener{
 		}
 
 		$block = $event->getBlock();
-		$player = $event->getPlayerByPrefix();
+		$player = $event->getPlayer();
 
 		if(isset($this->touch[$player->getName()])){
 		//	$mergeData[$player->getName()][0] = [(int)$block->getX(), (int)$block->getZ(), $block->getLevel()->getName()];
@@ -177,7 +178,7 @@ class EconomyProperty extends PluginBase implements Listener{
 	}
 
 	public function onBlockPlace(BlockPlaceEvent $event){
-		$username = $event->getPlayerByPrefix()->getName();
+		$username = $event->getPlayer()->getName();
 		if(isset($this->placeQueue[$username])){
 			$event->setCancelled(true);
 			// No message to send cuz it is already sent by InteractEvent
@@ -187,7 +188,7 @@ class EconomyProperty extends PluginBase implements Listener{
 
 	public function onBlockBreak(BlockBreakEvent $event){
 		$block = $event->getBlock();
-		$player = $event->getPlayerByPrefix();
+		$player = $event->getPlayer();
 
 		if(isset($this->touch[$player->getName()])){
 			//$mergeData[$player->getName()][1] = [(int)$block->getX(), (int)$block->getZ()];

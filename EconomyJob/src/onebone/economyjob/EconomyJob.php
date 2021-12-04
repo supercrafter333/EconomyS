@@ -20,6 +20,9 @@
 
 namespace onebone\economyjob;
 
+use pocketmine\permission\DefaultPermissions;
+use pocketmine\permission\Permission;
+use pocketmine\permission\PermissionManager;
 use pocketmine\plugin\PluginBase;
 use pocketmine\utils\Config;
 use pocketmine\command\CommandSender;
@@ -27,12 +30,16 @@ use pocketmine\command\Command;
 use pocketmine\event\Listener;
 use pocketmine\event\block\BlockBreakEvent;
 use pocketmine\event\block\BlockPlaceEvent;
+use pocketmine\utils\SingletonTrait;
 use pocketmine\utils\TextFormat;
 use pocketmine\player\Player;
 
 use onebone\economyapi\EconomyAPI;
 
-class EconomyJob extends PluginBase implements Listener{
+class EconomyJob extends PluginBase implements Listener
+{
+    use SingletonTrait;
+
 	/** @var Config */
 	private $jobs;
 	/** @var Config */
@@ -41,10 +48,12 @@ class EconomyJob extends PluginBase implements Listener{
 	/** @var  EconomyAPI */
 	private $api;
 
-	/** @var EconomyJob   */
-	private static $instance;
+    public function onLoad(): void
+    {
+        self::setInstance($this);
+    }
 
-	public function onEnable(){
+    public function onEnable(): void{
 		@mkdir($this->getDataFolder());
 		if(!is_file($this->getDataFolder()."jobs.yml")){
 			$this->jobs = new Config($this->getDataFolder()."jobs.yml", Config::YAML, yaml_parse($this->readResource("jobs.yml")));
@@ -56,7 +65,17 @@ class EconomyJob extends PluginBase implements Listener{
 		$this->getServer()->getPluginManager()->registerEvents($this, $this);
 
 		$this->api = EconomyAPI::getInstance();
-		self::$instance = $this;
+
+        PermissionManager::getInstance()->getPermission("economyjob.command.*")->addChild("economyjob.command.job", true);
+        $jobCmdPerms = [
+            "economyjob.command.job.join",
+            "economyjob.command.job.retire",
+            "economyjob.command.job.list",
+            "economyjob.command.job.me",
+        ];
+        foreach ($jobCmdPerms as $perm) {
+            PermissionManager::getInstance()->getPermission("economyjob.command.job")->addChild($perm, true);
+        }
 	}
 
 	private function readResource($res){
@@ -71,9 +90,10 @@ class EconomyJob extends PluginBase implements Listener{
 		return $content;
 	}
 
-	public function onDisable(){
-		$this->player->save();
-	}
+	public function onDisable(): void
+    {
+        $this->player->save();
+    }
 
 	/**
 	 * @priority MONITOR
@@ -81,7 +101,7 @@ class EconomyJob extends PluginBase implements Listener{
 	 * @param BlockBreakEvent $event
 	 */
 	public function onBlockBreak(BlockBreakEvent $event){
-		$player = $event->getPlayerByPrefix();
+		$player = $event->getPlayer();
 		$block = $event->getBlock();
 
 		$job = $this->jobs->get($this->player->get($player->getName()));
@@ -103,7 +123,7 @@ class EconomyJob extends PluginBase implements Listener{
 	 * @param BlockPlaceEvent $event
 	 */
 	public function onBlockPlace(BlockPlaceEvent $event){
-		$player = $event->getPlayerByPrefix();
+		$player = $event->getPlayer();
 		$block = $event->getBlock();
 
 		$job = $this->jobs->get($this->player->get($player->getName()));

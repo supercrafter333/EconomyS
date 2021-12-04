@@ -36,7 +36,7 @@ use onebone\economyapi\event\money\PayMoneyEvent;
 class EconomyUsury extends PluginBase implements Listener{
 	private $usuryHosts, $msg_queue, $schedule_req, $lang;
 	
-	public function onEnable(){
+	public function onEnable(): void{
 		if(!file_exists($this->getDataFolder())){
 			mkdir($this->getDataFolder());
 		}
@@ -94,7 +94,8 @@ class EconomyUsury extends PluginBase implements Listener{
 		}
 	}
 	
-	public function onDisable(){
+	public function onDisable(): void
+    {
 		$this->validateDue();
 		
 		$saves = [
@@ -125,7 +126,7 @@ class EconomyUsury extends PluginBase implements Listener{
 	}
 	
 	public function onJoinEvent(PlayerJoinEvent $event){
-		$player = $event->getPlayerByPrefix();
+		$player = $event->getPlayer();
 		
 		if(isset($this->msg_queue[$player->getName()])){
 			foreach($this->msg_queue[$player->getName()] as $msg){

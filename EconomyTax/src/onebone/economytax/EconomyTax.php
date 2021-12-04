@@ -39,7 +39,7 @@ class EconomyTax extends PluginBase{
 	 */
 	private $config;
 
-	public function onEnable(){
+	public function onEnable(): void{
 		if(!file_exists($this->getDataFolder())){
 			mkdir($this->getDataFolder());
 		}

@@ -21,9 +21,13 @@
 namespace onebone\economyland\event;
 
 use pocketmine\event\Cancellable;
+use pocketmine\event\CancellableTrait;
 use pocketmine\event\Event;
 
-class LandRemoveEvent extends Event implements Cancellable{
+class LandRemoveEvent extends Event implements Cancellable
+{
+    use CancellableTrait;
+
 	public static $handlerList = null;
 
 	private $id;

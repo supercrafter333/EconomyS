@@ -43,7 +43,7 @@ class EconomyCasino extends PluginBase implements Listener{
 	 */
 	private $config;
 
-	public function onEnable(){
+	public function onEnable(): void{
 		@mkdir($this->getDataFolder());
 		$this->api = EconomyAPI::getInstance();
 		$this->config = new Config($this->getDataFolder()."config.yml", Config::YAML, array(
@@ -57,13 +57,14 @@ class EconomyCasino extends PluginBase implements Listener{
 		$this->getServer()->getPluginManager()->registerEvents($this, $this);
 	}
 
-	public function onDisable(){
+	public function onDisable(): void
+    {
 		$this->api = null;
 		$this->casino = array();
 	}
 
 	public function onQuitEvent(PlayerQuitEvent $event){
-		$player = $event->getPlayerByPrefix();
+		$player = $event->getPlayer();
 		
 		foreach($this->casino as $pl => $casino){
 			if(isset($casino["players"][$pl])){

@@ -21,7 +21,7 @@
 namespace onebone\economyshop\provider;
 
 use pocketmine\level\Level;
-use pocketmine\level\Position;
+use pocketmine\world\Position;
 use pocketmine\utils\Config;
 
 class YamlDataProvider implements DataProvider{

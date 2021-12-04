@@ -22,7 +22,8 @@ namespace onebone\economyland\event;
 
 use pocketmine\event\Event;
 
-class LandAddedEvent extends  Event{
+class LandAddedEvent extends  Event
+{
 	public static $handlerList = null;
 
 	private $id, $startX, $startZ, $endX, $endZ, $level, $price, $player, $expires;
@@ -71,7 +72,7 @@ class LandAddedEvent extends  Event{
 		return $this->expires;
 	}
 
-	public function getPlayerByPrefix(){
+	public function getPlayer(){
 		return $this->player;
 	}
 }

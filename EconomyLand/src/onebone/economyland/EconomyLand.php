@@ -33,8 +33,9 @@ use pocketmine\command\Command;
 use pocketmine\command\CommandSender;
 use pocketmine\player\Player;
 use pocketmine\Server;
-use pocketmine\level\Position;
-use pocketmine\level\Level;
+use pocketmine\utils\SingletonTrait;
+use pocketmine\world\Position;
+use pocketmine\world\World as Level;
 use pocketmine\event\EventPriority;
 
 use onebone\economyapi\EconomyAPI;
@@ -42,9 +43,12 @@ use onebone\economyland\database\YamlDatabase;
 use onebone\economyland\database\SQLiteDatabase;
 use onebone\economyland\database\Database;
 
-class EconomyLand extends PluginBase implements Listener{
+class EconomyLand extends PluginBase implements Listener
+{
+    use SingletonTrait;
+
 	/**
-	 * @var \onebone\economyland\database\Database;
+	 * @var Database;
 	 */
 	private $db;
 	/**
@@ -56,60 +60,60 @@ class EconomyLand extends PluginBase implements Listener{
 
 	private $placeQueue;
 
-	private static $instance;
-
 	const RET_LAND_OVERLAP = 0;
 	const RET_LAND_LIMIT = 1;
 	const RET_SUCCESS = 2;
 
-	public function onEnable(): void{
+    public function onLoad(): void
+    {
+        self::setInstance($this);
+    }
 
-		if(!static::$instance instanceof EconomyLand){
-			static::$instance = $this;
-		}
+    public function onEnable(): void
+    {
 
-		$this->saveDefaultConfig();
+        $this->saveDefaultConfig();
 
-		if(!is_file($this->getDataFolder()."Expire.dat")){
-			file_put_contents($this->getDataFolder()."Expire.dat", serialize(array()));
-		}
-		$this->expire = unserialize(file_get_contents($this->getDataFolder()."Expire.dat"));
+        if (!is_file($this->getDataFolder() . "Expire.dat")) {
+            file_put_contents($this->getDataFolder() . "Expire.dat", serialize(array()));
+        }
+        $this->expire = unserialize(file_get_contents($this->getDataFolder() . "Expire.dat"));
 
-		$this->createConfig();
+        $this->createConfig();
 
-		if(is_numeric($interval = $this->getConfig()->get("auto-save-interval", 10))){
-			if($interval > 0){
-				$interval = $interval * 1200;
-				$this->getScheduler()->scheduleDelayedRepeatingTask(new SaveTask($this), $interval, $interval);
-			}
-		}
+        if (is_numeric($interval = $this->getConfig()->get("auto-save-interval", 10))) {
+            if ($interval > 0) {
+                $interval = $interval * 1200;
+                $this->getScheduler()->scheduleDelayedRepeatingTask(new SaveTask($this), $interval, $interval);
+            }
+        }
 
-		$this->placeQueue = [];
+        $this->placeQueue = [];
 
-		$now = time();
-		foreach($this->expire as $landId => &$time){
-			$time[1] = $now;
-			$this->getScheduler()->scheduleDelayedTask(new ExpireTask($this, $landId), ($time[0] * 20));
-		}
+        $now = time();
+        foreach ($this->expire as $landId => &$time) {
+            $time[1] = $now;
+            $this->getScheduler()->scheduleDelayedTask(new ExpireTask($this, $landId), ($time[0] * 20));
+        }
 
-		switch(strtolower($this->getConfig()->get("database-type", "yaml"))){
-			case "yaml":
-			case "yml":
-				$this->db = new YamlDatabase($this->getDataFolder()."Land.yml", $this->getConfig(), $this->getDataFolder()."Land.sqlite3");
-				break;
-			case "sqlite3":
-			case "sqlite":
-				$this->db = new SQLiteDatabase($this->getDataFolder()."Land.sqlite3", $this->getConfig(), $this->getDataFolder()."Land.yml");
-				break;
-			default:
-				$this->db = new YamlDatabase($this->getDataFolder()."Land.yml", $this->getConfig(), $this->getDataFolder()."Land.sqlite3");
-				$this->getLogger()->alert("Specified database type is unavailable. Database type is YAML.");
-		}
-		$this->getServer()->getPluginManager()->registerEvent("pocketmine\\event\\block\\BlockPlaceEvent", Closure::fromCallable([$this, 'onPlaceEvent']), EventPriority::HIGHEST, $this);
-		$this->getServer()->getPluginManager()->registerEvent("pocketmine\\event\\block\\BlockBreakEvent", Closure::fromCallable([$this, 'onBreakEvent']), EventPriority::HIGHEST, $this);
-		$this->getServer()->getPluginManager()->registerEvent("pocketmine\\event\\player\\PlayerInteractEvent", Closure::fromCallable([$this, 'onPlayerInteract']), EventPriority::HIGHEST, $this);
-	
-	}
+        switch (strtolower($this->getConfig()->get("database-type", "yaml"))) {
+            case "yaml":
+            case "yml":
+                $this->db = new YamlDatabase($this->getDataFolder() . "Land.yml", $this->getConfig(), $this->getDataFolder() . "Land.sqlite3");
+                break;
+            case "sqlite3":
+            case "sqlite":
+                $this->db = new SQLiteDatabase($this->getDataFolder() . "Land.sqlite3", $this->getConfig(), $this->getDataFolder() . "Land.yml");
+                break;
+            default:
+                $this->db = new YamlDatabase($this->getDataFolder() . "Land.yml", $this->getConfig(), $this->getDataFolder() . "Land.sqlite3");
+                $this->getLogger()->alert("Specified database type is unavailable. Database type is YAML.");
+        }
+        $this->getServer()->getPluginManager()->registerEvent("pocketmine\\event\\block\\BlockPlaceEvent", Closure::fromCallable([$this, 'onPlaceEvent']), EventPriority::HIGHEST, $this);
+        $this->getServer()->getPluginManager()->registerEvent("pocketmine\\event\\block\\BlockBreakEvent", Closure::fromCallable([$this, 'onBreakEvent']), EventPriority::HIGHEST, $this);
+        $this->getServer()->getPluginManager()->registerEvent("pocketmine\\event\\player\\PlayerInteractEvent", Closure::fromCallable([$this, 'onPlayerInteract']), EventPriority::HIGHEST, $this);
+
+    }
 
 	public function expireLand($landId){
 		if(!isset($this->expire[$landId])) return;
@@ -145,13 +149,6 @@ class EconomyLand extends PluginBase implements Listener{
 		if($this->db instanceof Database){
 			$this->db->save();
 		}
-	}
-
-	/**
-	 * @return EconomyLand
-	 */
-	public static function getInstance(){
-		return static::$instance;
 	}
 
 	public function onCommand(CommandSender $sender, Command $cmd, string $label, array $param) : bool{
@@ -354,7 +351,7 @@ class EconomyLand extends PluginBase implements Listener{
 						return true;
 					}
 				}
-				$level = $this->getServer()->getWorldByName($info["level"]);
+				$level = $this->getServer()->getWorldManager()->getWorldByName($info["level"]);
 				if(!$level instanceof Level){
 					$sender->sendMessage($this->getMessage("land-corrupted", array($num, $info["level"], "")));
 					return true;
@@ -540,8 +537,8 @@ class EconomyLand extends PluginBase implements Listener{
 					$sender->sendMessage($this->getMessage("run-cmd-in-game"));
 					return true;
 				}
-				$x = $sender->getX();
-				$z = $sender->getZ();
+				$x = $sender->getPosition()->getX();
+				$z = $sender->getPosition()->getZ();
 
 				$info = $this->db->getByCoord($x, $z, $sender->getPosition()->getWorld()->getFolderName());
 				if($info === false){

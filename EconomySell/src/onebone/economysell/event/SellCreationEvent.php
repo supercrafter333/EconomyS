@@ -21,11 +21,15 @@
 namespace onebone\economysell\event;
 
 use pocketmine\event\Cancellable;
+use pocketmine\event\CancellableTrait;
 use pocketmine\event\Event;
 use pocketmine\item\Item;
-use pocketmine\level\Position;
+use pocketmine\world\Position;
 
-class SellCreationEvent extends Event implements Cancellable{
+class SellCreationEvent extends Event implements Cancellable
+{
+    use CancellableTrait;
+
     public static $handlerList = null;
 
     private $position, $item, $price, $side;

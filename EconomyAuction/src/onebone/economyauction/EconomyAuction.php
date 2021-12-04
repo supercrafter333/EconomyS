@@ -45,7 +45,7 @@ class EconomyAuction extends PluginBase{
 	*/
 	private $auctions, $queue;
 	
-	public function onEnable(){
+	public function onEnable(): void{
 		if(!file_exists($this->getDataFolder())){
 			mkdir($this->getDataFolder());
 		}
@@ -68,7 +68,8 @@ class EconomyAuction extends PluginBase{
 		}
 	}
 	
-	public function onDisable(){
+	public function onDisable(): void
+    {
 		$now = time();
 		foreach($this->auctions as $player => $data){
 			if(isset($this->auctions[$player][6])){
