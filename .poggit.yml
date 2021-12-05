@@ -29,9 +29,9 @@ projects:
 #  EconomySell-PM4:
 #    path: EconomySell/
 #    logo: EconomyAPI/icon.png
-#  EconomyShop-PM4:
-#    path: EconomyShop/
-#    logo: EconomyAPI/icon.png
+  EconomyShop-PM4:
+    path: EconomyShop/
+    logo: EconomyAPI/icon.png
 #  EconomyTax-PM4:
 #    path: EconomyTax/
 #    logo: EconomyAPI/icon.png

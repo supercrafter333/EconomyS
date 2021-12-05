@@ -20,7 +20,7 @@
 
 namespace onebone\economyshop\provider;
 
-use pocketmine\level\Level;
+use pocketmine\world\World as Level;
 use pocketmine\world\Position;
 use pocketmine\utils\Config;
 
@@ -42,7 +42,7 @@ class YamlDataProvider implements DataProvider{
 
 			$y = $x->getFloorY();
 			$z = $x->getFloorZ();
-			$level = $x->getLevel();
+			$level = $x->getWorld();
 			$x = $x->getFloorX();
 		}
 		if($level instanceof Level){
@@ -63,7 +63,7 @@ class YamlDataProvider implements DataProvider{
 		if($x instanceof Position){
 			$y = $x->getFloorY();
 			$z = $x->getFloorZ();
-			$level = $x->getLevel();
+			$level = $x->getWorld();
 			$x = $x->getFloorX();
 		}
 		if($level instanceof Level){
@@ -83,7 +83,7 @@ class YamlDataProvider implements DataProvider{
 		if($x instanceof Position){
 			$y = $x->getFloorY();
 			$z = $x->getFloorZ();
-			$level = $x->getLevel();
+			$level = $x->getWorld();
 			$x = $x->getFloorX();
 		}
 		if($level instanceof Level){

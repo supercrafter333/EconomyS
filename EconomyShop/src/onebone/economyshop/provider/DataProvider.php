@@ -30,10 +30,10 @@ interface DataProvider{
 	public function __construct($file, $save);
 
 	/**
-	 * @param \pocketmine\level\Position|int $x
+	 * @param \pocketmine\world\Position|int $x
 	 * @param array|int $y
 	 * @param int $z
-	 * @param \pocketmine\level\Level|string $level
+	 * @param \pocketmine\world\World|string $level
 	 * @param array $data
 	 *
 	 * @return bool
@@ -41,20 +41,20 @@ interface DataProvider{
 	public function addShop($x, $y = 0, $z = 0, $level = null, $data = []);
 
 	/**
-	 * @param \pocketmine\level\Position|int $x
+	 * @param \pocketmine\world\Position|int $x
 	 * @param int $y
 	 * @param int $z
-	 * @param \pocketmine\level\Level|string $level
+	 * @param \pocketmine\world\World|string $level
 	 *
 	 * @return mixed
 	 */
 	public function getShop($x, $y = 0, $z = 0, $level = null);
 
 	/**
-	 * @param \pocketmine\level\Position|int $x
+	 * @param \pocketmine\world\Position|int $x
 	 * @param int $y
 	 * @param int $z
-	 * @param \pocketmine\level\Level|string $level
+	 * @param \pocketmine\world\World|string $level
 	 *
 	 * @return bool
 	 */
