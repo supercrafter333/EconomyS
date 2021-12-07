@@ -105,11 +105,14 @@ class EconomyShop extends PluginBase implements Listener{
         $economyShopShop->recalculatePermissibles();
 
         $economyCmdShop->addChild("economyshop.command.shop.create", true);
+        $economyCmdShop->recalculatePermissibles();
         $economyCmdShop->addChild("economyshop.command.shop.remove", true);
+        $economyCmdShop->recalculatePermissibles();
         $economyCmdShop->addChild("economyshop.command.shop.list", true);
         $economyCmdShop->recalculatePermissibles();
 
         $economyShop->addChild($economyCmdShop->getName(), true);
+        $economyCmdShop->recalculatePermissibles();
         $economyShop->addChild($economyShopShop->getName(), true);
         $economyShop->recalculatePermissibles();
 	}
